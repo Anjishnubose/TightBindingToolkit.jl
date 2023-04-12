@@ -10,7 +10,7 @@ export getRLVs , BZ , fillBZ! , kExp
 include("Hamiltonian.jl")
 export Hamiltonian , FillHamiltonian , Diagonalize , SolveHamiltonian , getGk 
 
-include("Chern")
+include("Chern.jl")
 export FindLinks , FieldStrength , ChernNumber
 
 

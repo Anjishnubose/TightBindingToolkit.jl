@@ -1,5 +1,4 @@
 using LinearAlgebra
-using MKL
 
 Id3 = Matrix(1.0I,3,3)
 ############## Pauli matrices ############################################
