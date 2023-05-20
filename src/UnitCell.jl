@@ -1,7 +1,6 @@
 using LinearAlgebra
-using MKL
 
-@doc raw"""
+@doc """
 `Bond{T<:Number}` is a data type representing a general bond on a lattice.
 
 # Fields
@@ -22,7 +21,7 @@ mutable struct Bond{T<:Number}
 	label 	::	String
 end
 
-"""
+@doc """
 Function to check if two bond objects are describing the same physical bond, just inverted! 
 """
 function isSameBond( Bond1::Bond , Bond2::Bond ) :: Bool
@@ -34,7 +33,7 @@ function isSameBond( Bond1::Bond , Bond2::Bond ) :: Bool
 end
 
 
-@doc raw"""
+@doc """
 `UnitCell` is a data type representing a general unit cell of a lattice.
 
 # Fields
@@ -63,7 +62,7 @@ mutable struct UnitCell
 end 
 
 
-@doc raw"""
+@doc """
 ```julia
 getDistance(uc::UnitCell, base::Int64, target::Int64, offset::Vector{Int64}) --> Float64
 ```
@@ -74,7 +73,7 @@ function getDistance(uc::UnitCell, base::Int64, target::Int64, offset::Vector{In
 	return norm( sum( offset.*uc.primitives ) + (uc.basis[target] - uc.basis[base] ) )
 end
 
-@doc raw"""
+@doc """
 ```julia
 addBasisSite!( uc::UnitCell , position::Vector{Float64} )
 addBasisSite!( uc::UnitCell , position::Vector{Float64} , field::Vector{Float64} )
@@ -93,7 +92,7 @@ function addBasisSite!( uc::UnitCell , position::Vector{Float64} , field::Vector
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 getAllOffsets(OffsetRange::Int64, dim::Int64) --> Vector{Vector{Int64}}
 ```
@@ -114,7 +113,7 @@ function getAllOffsets(OffsetRange::Int64, dim::Int64) :: Vector{Vector{Int64}}
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String )
 addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Matrix{<:Number} , dist::Float64, label::String )
@@ -154,7 +153,7 @@ function addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offse
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 addIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
 addIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Matrix{<:Number} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
@@ -206,7 +205,7 @@ function addIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Matrix{<:Numbe
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 ModifyBonds!(uc::UnitCell, dist::Float64, newMat::Matrix{<:Number})
 ModifyBonds!(uc::UnitCell, label::String, newMat::Matrix{<:Number})
@@ -227,7 +226,7 @@ function ModifyBonds!(uc::UnitCell, label::String, newMat::Matrix{<:Number})
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 ScaleBonds!(uc::UnitCell, dist::Float64, scale::Number)
 ScaleBonds!(uc::UnitCell, label::String, scale::Number)
@@ -246,7 +245,7 @@ function ScaleBonds!(uc::UnitCell, label::String, scale::Number)
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 RemoveBonds!(uc::UnitCell, dist::Float64)
 ScaleBonds!(uc::UnitCell, label::String)
@@ -266,7 +265,7 @@ function RemoveBonds!(uc::UnitCell, dist::Float64 )
 end
 
 
-@doc raw"""
+@doc """
 ```julia
 ModifyFields!(uc::UnitCell, site::Int64, newField::Vector{Float64})
 ModifyFields!(uc::UnitCell, newField::Vector{Vector{Float64}})
