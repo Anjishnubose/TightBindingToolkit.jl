@@ -34,6 +34,18 @@ function isSameBond( Bond1::Bond , Bond2::Bond ) :: Bool
 end
 
 
+@doc raw"""
+`UnitCell` is a data type representing a general unit cell of a lattice.
+
+# Fields
+ - `primitives  :: Vector{ Vector{ Float64 } }`: primitive bases vectors of the lattice.
+ - `basis       :: Vector{ Vector{ Float64 } }`: positions of the sub-lattices.
+ - `bonds       :: Vector{Bond}`: the set of all bonds defining a lattice.
+ - `fields      :: Vector{ Vector{Float64}} : the fields oneach basis site.
+ - `localDim    :: Int64`: Local Hilbert space dimension ( e.g. 3 for classical spins, 2 for spin-1/2 electrons ).
+ - `BC          :: Vector{ Int64 }`: boundary conditions.
+
+"""
 mutable struct UnitCell
     primitives  :: Vector{ Vector{ Float64 } } # Lattice basis vectors
     basis       :: Vector{ Vector{ Float64 } } # Sublattice positions
