@@ -1,26 +1,31 @@
 include("UnitCell.jl")
 include("BZ.jl")
-
+include("SpinMats.jl")
 using LinearAlgebra
 
 """
 Function to fill the Hamiltonian at a given momentum point, k,  given a unit cell object
 # """
-function FillHamiltonian(uc::UnitCell, k::Vector{Float64})
+function FillHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}})
     dims    =   uc.localDim * length(uc.basis)
     H       =   zeros(ComplexF64, dims, dims)
 
     for site in 1:length(uc.basis)
         b1  =   uc.localDim * (site - 1) + 1
         b2  =   uc.localDim * (site - 1) + 1
-        H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   sum(uc.fields[site] .* SpinVec) 
+        H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   sum(uc.fields[site][1:3] .* SpinMatrices[1:3]) 
     end
 
     for bond in uc.bonds
         b1  =   uc.localDim * (bond.base - 1) + 1
         b2  =   uc.localDim * (bond.target - 1) + 1
-        H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  +=   exp( im * dot(k, sum(bond.offset .* uc.primitives))) * bond.mat
-        H[b2 : b2 + uc.localDim - 1, b1 : b1 + uc.localDim - 1]  +=   exp(-im * dot(k, sum(bond.offset .* uc.primitives))) * bond.mat'  
+        
+        if b1==b2 && bond.offset==zeros(length(uc.basis))
+            H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   bond.mat
+        else
+            H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   exp( im * dot(k, sum(bond.offset .* uc.primitives))) * bond.mat
+            H[b2 : b2 + uc.localDim - 1, b1 : b1 + uc.localDim - 1]  .+=   exp(-im * dot(k, sum(bond.offset .* uc.primitives))) * bond.mat' 
+        end 
     end
 
     return H
@@ -30,7 +35,8 @@ end
 Function to get H over all k points
 """
 function FullHamiltonian(uc::UnitCell, bz::BZ)
-    return FillHamiltonian.(Ref(uc), bz.ks)
+    SpinMatrices    =   SpinMats((uc.localDim-1)//2)
+    return FillHamiltonian.(Ref(uc), bz.ks ; SpinMatrices = SpinMatrices)
 end
 
 """
@@ -38,65 +44,44 @@ The Hamiltonian struct contains the following
     1. H : a matrix of matrix s.t. H[i, j] corresponds to the Hamiltonian at k=ks[i, j] where ks=bz.ks in the brillouin Zone
     2. bands : a matrix of vectors s.t. bands[i, j] are the energies at k=ks[i, j]
     3. states : a matrix of unitary matrices s.t. states[i, j] are all the eigenvectors at k=ks[i, j]
-    4. Gk :  a matrix of matrix s.t. Gk[i, j] are all the correlations <c†_k . c_k> b/w the sublattices at k=ks[i, j] ----> momentum space correlations
-    5. Gr : a matrix of matrix s.t. Gr[i, j] = <c†_0 c_δ> where δ = i * a1 + j * a2  ----> real space correlations
+
 """
 mutable struct Hamiltonian
-    H       ::  Matrix{Matrix{ComplexF64}}
-    bands   ::  Matrix{Vector{Float64}}
-    states  ::  Matrix{Matrix{ComplexF64}}
-    filling ::  Float64
-    Gk      ::  Matrix{Matrix{ComplexF64}}
-    Gr      ::  Matrix{Matrix{ComplexF64}}
+    H           ::  Matrix{Matrix{ComplexF64}}
+    bands       ::  Matrix{Vector{Float64}}
+    states      ::  Matrix{Matrix{ComplexF64}}
+    bandwidth   ::  Tuple{Float64, Float64}
 
-    Hamiltonian(uc::UnitCell, bz::BZ, filling::Float64=0.5) = new{}(FullHamiltonian(uc, bz), Array{Vector{Float64}}(undef, 0, 0), 
-                                                Array{Matrix{Float64}}(undef, 0, 0), filling, Array{Matrix{Float64}}(undef, 0, 0), Array{Matrix{Float64}}(undef, 0, 0))
+    Hamiltonian(uc::UnitCell, bz::BZ) = new{}(FullHamiltonian(uc, bz), Array{Vector{Float64}}(undef, 0, 0), Array{Matrix{ComplexF64}}(undef, 0, 0), (0.0, 0.0))
 end
 
 """
 Diagonalize a Hamiltonian at all momentum points simultaneuosly!
 """
-function Diagonalize(H::Matrix{Matrix{ComplexF64}})
-    sols    =   eigen.(Hermitian.(H))
-    states  =   getfield.(sols, :vectors)
-    bands   =   getfield.(sols, :values)
-    return bands, states
+function DiagonalizeHamiltonian!(Ham::Hamiltonian)
+    sols            =   eigen.(Hermitian.(Ham.H))
+    Ham.bands       =   getfield.(sols, :values)
+    Ham.states      =   getfield.(sols, :vectors)
+    Ham.bandwidth   =   extrema(reduce(vcat, Ham.bands))
+    println("Hamiltonian Diagonalized")
 end
 
 """
-Finding the Greens functions in momentum space at some filling
+Density of state calculator
 """
-function getGk(states::Matrix{Matrix{ComplexF64}}, filling::Float64)
-    N           =   size(states[1, 1])[1]  ##### each Gk is going to be a N x N complex matrix
-    quasiCount 	=	diagm(cat(ones(round(Int64, N * filling)), zeros(round(Int64, N - (N * filling))), dims=1))   ##### Matrix with 1s and 0s along the diagonal s.t. the trace is as close to N * filling as possible.
-    Gk          =   states .* Ref(quasiCount) .* adjoint.(states)
-    return tranpose.(Gk)
+function DOS(Omega::Float64, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) :: Float64
+
+    energies    =   reduce(vcat, Ham.bands)
+    n_bands     =   length(Ham.bands[1, 1])
+    energies    =   energies[filter(i -> (i-1) % n_bands + 1 <= till_band, 1:length(energies))]
+    dos         =   @. 1 / (Omega - energies + im * spread)
+    dos         =   imag(sum(dos))
+    return dos
 end
 
-function SolveHamiltonian!(Ham::Hamiltonian)
-    Ham.bands, Ham.states   =   Diagonalize(Ham.H)
-    Ham.Gk      =   getGk(Ham.states, Ham.filling)
-end
+function DOS(Omegas::Vector{Float64}, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) :: Vector{Float64}
 
-"""
-An example!
-"""
-
-if abspath(PROGRAM_FILE) == @__FILE__
-    ##### Square lattice unit cell with enlarged unit cell along one direction
-    a1      =   [2.0, 0.0]
-    a2      =   [0.0, 1.0]
-    uc      =   UnitCell(a1, a2, 2)
-    addBasisSite!(uc, [0.0, 0.0])
-    addBasisSite!(uc, [1.0, 0.0])
-    addIsotropicBonds!(uc, 1.0, SpinVec[3], "1NN", 1)
-    ##### BZ with size 100
-    kSize   =   100
-    bz      =   BZ(kSize)
-    fillBZ!(bz, uc)
-    ##### timing stuff
-    @time Hamiltonian(uc, bz)
-    @time Hamiltonian(uc, bz)
-    @time Hamiltonian(uc, bz)
-
+    dos     =   DOS.(Omegas, Ref(Ham); till_band=till_band, spread=spread)
+    dos     =   @. dos / sum(dos)
+    return dos
 end
