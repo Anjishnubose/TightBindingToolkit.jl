@@ -10,8 +10,8 @@ TensorCast = "02d47bb6-7ce6-556a-be16-bb1710789e2b"
 
 [compat]
 julia = "1.8"
-TensorCast = "^0.4.6"
-MappedArrays = "^0.4.1"
+TensorCast = "^0.4.0"
+MappedArrays = "^0.4.0"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
