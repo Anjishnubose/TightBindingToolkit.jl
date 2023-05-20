@@ -2,5 +2,5 @@ using TightBindingToolkit
 using Test
 
 @testset "TightBindingToolkit.jl" begin
-    # Write your tests here.
+    @test 1==1
 end
