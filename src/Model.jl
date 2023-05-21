@@ -5,6 +5,26 @@ include("Hamiltonian.jl")
 using LinearAlgebra
 
 
+@doc """
+`Model` is a data type representing a general Tight Binding system.
+
+# Attributes
+ - `uc      ::  UnitCell`: the Unit cell of the lattice.
+ - `bz      ::  BZ`: The discretized Brillouin Zone.
+ - `Ham     ::  Hamiltonian`: the Hamiltonian at all momentum-points.
+ - `T       ::  Float64`: the temperature of the system.
+ - `filling ::  Float64`: The filling of the system.
+ - `mu      ::  Float64`: The chemical potential of the system.
+ - `stat    ::  Int64` : ±1 for bosons and fermions.
+ - `gap     ::  Float64` : the energy gap of excitations at the given filling.
+ - `Gk      ::  Matrix{Matrix{ComplexF64}}` : A matrix (corresponding to the matrix of k-points in `BZ`) of Greens functions.
+
+Initialize this structure using 
+```julia
+Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=0.0, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1)
+```
+You can either input a filling, or a chemical potential. The corresponding μ for a given filling, or filling for a given μ is automatically calculated.
+"""
 mutable struct Model
     uc      ::  UnitCell
     bz      ::  BZ
@@ -22,26 +42,48 @@ mutable struct Model
 end
 
 
-"""
-Distribution Function : E can be a number, vector, array etc
+@doc """
+```julia
+dist(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
+```
+Distribution function. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
+
 """
 function dist(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
     return @. 1 / (exp((E - mu) / T) - stat)
 end
 
+
+@doc """
+```julia
+distDer(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
+```
+derivative of [`dist`](@ref) w.r.t the energy. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
+
+"""
 function distDer(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
     return @. - (1/T) * exp((E - mu) / T) / ((exp((E - mu) / T) - stat) ^ 2)
 end
 
+
+@doc """
+```julia
+findFilling(bands::Vector{Float64}, mu::Float64, T::Float64, stat::Int64=-1) --> Float64
+```
+Find filling at given `T`=temperature and `mu`=chemical potential, for a given `bands`.
+
 """
-Find filling at given temperature and chemical potential
-"""
-function findFilling(bands::Vector{Float64}, mu::Float64, T::Float64, stat::Int64=-1)
+function findFilling(bands::Vector{Float64}, mu::Float64, T::Float64, stat::Int64=-1) :: Float64
     return sum(dist(bands; T=T, mu=mu, stat=stat)) / length(bands)
 end
 
-"""
-Function to get chemical potential given a filling!
+
+@doc """
+```julia
+getMu!(M::Model, tol::Float64=0.001)
+```
+Function to get chemical potential for a given `Model`, within a tolerance.
+
 """
 function getMu!(M::Model, tol::Float64=0.001)
     energies    =   sort(reduce(vcat, M.Ham.bands))
@@ -65,8 +107,14 @@ function getMu!(M::Model, tol::Float64=0.001)
         M.mu  =   guess
     end
 end
-"""
-Function to get filling given a chemical potential!
+
+
+@doc """
+```julia
+getFilling!(M::Model)
+```
+Find filling for a given `Model`.
+
 """
 function getFilling!(M::Model)
     if M.T≈0.0
@@ -76,14 +124,26 @@ function getFilling!(M::Model)
         M.filling   =   findFilling(reduce(vcat, M.Ham.bands), M.mu, M.T, M.stat)
     end
 end
-"""
+
+
+@doc """
+```julia
+getCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64) --> Matrix{Float64}
+```
 Function to return a diagonal matrix whose entries are M[i, i] = θ(-(E^i(k)-μ)) ----> 1 if the energy is below the chemical potential, otherwise 0.
+
 """
-function getCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64)
+function getCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64) :: Matrix{Float64}
     return diagm(dist(Es; T=T, mu=mu, stat=stat))
 end
-"""
-Finding the Greens functions in momentum space at some chemical potential
+
+
+@doc """
+```julia
+getGk!(M::Model)
+```
+Finding the equal-time Greens functions in momentum space of a `Model`.
+
 """
 function getGk!(M::Model)
     quasiCount 	=	getCount.(M.Ham.bands, Ref(M.mu), Ref(M.T), Ref(M.stat))   ##### Matrix with 1s and 0s along the diagonal. The count of the quasiparticles at each k point determined by the bands and the chemical potential
@@ -91,6 +151,13 @@ function getGk!(M::Model)
 end
 
 
+@doc """
+```julia
+SolveModel!(M::Model)
+```
+one-step function to find all the attributes in Model after it has been initialized.
+
+"""
 function SolveModel!(M::Model)
     energies    =   sort(reduce(vcat, M.Ham.bands))
     if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
@@ -102,3 +169,5 @@ function SolveModel!(M::Model)
     getGk!(M)
     println("System filled!")
 end
+
+#//TODO : Add real space Greens function calculation using FFTW.

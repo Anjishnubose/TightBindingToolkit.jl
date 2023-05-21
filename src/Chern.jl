@@ -4,10 +4,15 @@ include("Hamiltonian.jl")
 
 using LinearAlgebra
 
-"""
-Function to get the linking matrices on each neighbouring point in the brillouin zone grid.
+
+@doc """
+```julia
+FindLinks(Ham::Hamiltonian, subset::Vector{Int64}) --> Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
+```
+Function to get the linking matrices on each neighbouring point in the `BZ`.
 On a bond connecting k_i and k_j, the linking matrix U is defined such that U[m, n] = <v^m[k_i]|v^n[k_j]> where states[k_j[1], k_j[2], :, m] 
- v^m[k_j], the mth eigenstate at momentum k_j.
+v^m[k_j], the mth eigenstate at momentum k_j.
+
 """
 function FindLinks(Ham::Hamiltonian, subset::Vector{Int64})::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
     shifted_1   =   circshift(Ham.states, [-1, 0])
@@ -20,8 +25,13 @@ function FindLinks(Ham::Hamiltonian, subset::Vector{Int64})::Tuple{Matrix{Comple
     return (Link_1, Link_2)
 end
 
-"""
-Function to calculate the product of the links over each plaquette on the BZ grid
+
+@doc """
+```julia
+FieldStrength(Links::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}) --> Matrix{ComplexF64}
+```
+Function to calculate the product of the links over each plaquette on the BZ grid. This is the generalized Bery curvature for multiple degenerate bands.
+
 """
 function FieldStrength(Links::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}})::Matrix{ComplexF64}
 
@@ -38,8 +48,13 @@ function FieldStrength(Links::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}})::Ma
     return Fields
 end
 
-"""
-Function to get Chern numbers given a Hamiltonian and a subset of bands
+
+@doc """
+```julia
+ChernNumber(Ham::Hamiltonian, subset::Vector{Int64}) --> Float64
+```
+Function to get Chern numbers given a `Hamiltonian` and a `subset` of bands
+
 """
 function ChernNumber(Ham::Hamiltonian, subset::Vector{Int64})::Float64
     Links   =   FindLinks(Ham, subset)

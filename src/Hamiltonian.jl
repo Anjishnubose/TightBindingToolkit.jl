@@ -3,10 +3,15 @@ include("BZ.jl")
 include("SpinMats.jl")
 using LinearAlgebra
 
+
+@doc """
+```julia
+FillHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2)) :: Matrix{ComplexF64}
+```
+Returns the Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`.
+
 """
-Function to fill the Hamiltonian at a given momentum point, k,  given a unit cell object
-# """
-function FillHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}})
+function FillHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2)) :: Matrix{ComplexF64}
     dims    =   uc.localDim * length(uc.basis)
     H       =   zeros(ComplexF64, dims, dims)
 
@@ -31,20 +36,33 @@ function FillHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector
     return H
 end
 
+
+@doc """
+```julia
+FullHamiltonian(uc::UnitCell, bz::BZ) --> Matrix{Matrix{ComplexF64}}
+```
+Returns the full Hamiltonian at all momentum points in `BZ`, corresponding to the bonds present in `UnitCell`.
+
 """
-Function to get H over all k points
-"""
-function FullHamiltonian(uc::UnitCell, bz::BZ)
+function FullHamiltonian(uc::UnitCell, bz::BZ) :: Matrix{Matrix{ComplexF64}}
     SpinMatrices    =   SpinMats((uc.localDim-1)//2)
     return FillHamiltonian.(Ref(uc), bz.ks ; SpinMatrices = SpinMatrices)
 end
 
-"""
-The Hamiltonian struct contains the following
-    1. H : a matrix of matrix s.t. H[i, j] corresponds to the Hamiltonian at k=ks[i, j] where ks=bz.ks in the brillouin Zone
-    2. bands : a matrix of vectors s.t. bands[i, j] are the energies at k=ks[i, j]
-    3. states : a matrix of unitary matrices s.t. states[i, j] are all the eigenvectors at k=ks[i, j]
 
+@doc """
+`Hamiltonian` is a data type representing a general momentum-space Hamiltonian corresponding to the given `UnitCell` and `BZ`.
+
+# Attributes
+ - `H           :: Matrix{Matrix{ComplexF64}}`: A matrix (corresponding to the matrix of k-points in `BZ`) of Hamiltonian matrices.
+ - `bands       :: Matrix{Vector{Float64}}`: A matrix (corresponding to the matrix of k-points in `BZ`) of band spectrums.
+ - `states      :: Matrix{Matrix{ComplexF64}}`: A matrix (corresponding to the matrix of k-points in `BZ`) of band wavefunctions.
+ - `bandwidth   :: Tuple{Float64, Float64}` : the tuple of minimum and maximum energies in the band structure.
+
+Initialize this structure using
+```julia
+Hamiltonian(uc::UnitCell, bz::BZ)
+```
 """
 mutable struct Hamiltonian
     H           ::  Matrix{Matrix{ComplexF64}}
@@ -55,8 +73,13 @@ mutable struct Hamiltonian
     Hamiltonian(uc::UnitCell, bz::BZ) = new{}(FullHamiltonian(uc, bz), Array{Vector{Float64}}(undef, 0, 0), Array{Matrix{ComplexF64}}(undef, 0, 0), (0.0, 0.0))
 end
 
-"""
-Diagonalize a Hamiltonian at all momentum points simultaneuosly!
+
+@doc """
+```julia
+DiagonalizeHamiltonian!(Ham::Hamiltonian)
+```
+Diagonalize the `Hamiltonian` at all momentum points in the `BZ`.
+
 """
 function DiagonalizeHamiltonian!(Ham::Hamiltonian)
     sols            =   eigen.(Hermitian.(Ham.H))
@@ -66,8 +89,15 @@ function DiagonalizeHamiltonian!(Ham::Hamiltonian)
     println("Hamiltonian Diagonalized")
 end
 
-"""
-Density of state calculator
+
+@doc """
+```julia
+DOS(Omega::Float64, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) --> Float64
+DOS(Omegas::Vector{Float64}, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) --> Vector{Float64}
+```
+Calculate the Density of State correspondingto the given energies in `Omegas`, for the lowest bands upto `till_band`.
+The calculation is done at a finite `spread` of the delta-function sum. 
+
 """
 function DOS(Omega::Float64, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) :: Float64
 

@@ -3,7 +3,7 @@ using LinearAlgebra
 @doc """
 `Bond{T<:Number}` is a data type representing a general bond on a lattice.
 
-# Fields
+# Attributes
  - `base::Int64`: sub-lattice of the initial site on the bond.
  - `base::Int64`: sub-lattice of the final site on the bond.
  - `offset::Vector{Int64}`: the difference of the unit cells in which these sublattices belong to, in units of the lattice basis vectors.
@@ -36,14 +36,18 @@ end
 @doc """
 `UnitCell` is a data type representing a general unit cell of a lattice.
 
-# Fields
+# Attributes
  - `primitives  :: Vector{ Vector{ Float64 } }`: primitive bases vectors of the lattice.
  - `basis       :: Vector{ Vector{ Float64 } }`: positions of the sub-lattices.
  - `bonds       :: Vector{Bond}`: the set of all bonds defining a lattice.
- - `fields      :: Vector{ Vector{Float64}} : the fields oneach basis site.
+ - `fields      :: Vector{ Vector{Float64}}` : the fields oneach basis site.
  - `localDim    :: Int64`: Local Hilbert space dimension ( e.g. 3 for classical spins, 2 for spin-1/2 electrons ).
  - `BC          :: Vector{ Int64 }`: boundary conditions.
 
+Initialize this structure using 
+```julia
+UnitCell( as::Vector{Vector{Float64}} , localDim::Int64)
+```
 """
 mutable struct UnitCell
     primitives  :: Vector{ Vector{ Float64 } } # Lattice basis vectors
@@ -66,7 +70,7 @@ end
 ```julia
 getDistance(uc::UnitCell, base::Int64, target::Int64, offset::Vector{Int64}) --> Float64
 ```
-get the distance between site at position (0, base) and (R, target), where R = offset, when written in units of the unit cell primitive vectors.
+get the distance between site at position (0, `base`) and (R, `target`), where R = `offset`, when written in units of the unit cell primitive vectors.
 
 """
 function getDistance(uc::UnitCell, base::Int64, target::Int64, offset::Vector{Int64}) :: Float64
@@ -78,7 +82,7 @@ end
 addBasisSite!( uc::UnitCell , position::Vector{Float64} )
 addBasisSite!( uc::UnitCell , position::Vector{Float64} , field::Vector{Float64} )
 ```
-Add a sublattice to the UnitCell  at the given real-space position, with an on-site field.
+Add a sublattice to the `UnitCell`  at the given real-space position, with an on-site `field`.
 
 """
 function addBasisSite!( uc::UnitCell , position::Vector{Float64} )
@@ -96,7 +100,7 @@ end
 ```julia
 getAllOffsets(OffsetRange::Int64, dim::Int64) --> Vector{Vector{Int64}}
 ```
-Given a range, returns the set of all possible Bond offsets such that each element of the offset vector lies in [-OffsetRange, OffsetRange].
+Given a range, returns the set of all possible Bond offsets such that each element of the offset vector lies in [-`OffsetRange`, `OffsetRange`].
 
 """
 function getAllOffsets(OffsetRange::Int64, dim::Int64) :: Vector{Vector{Int64}}
@@ -118,8 +122,8 @@ end
 addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String )
 addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Matrix{<:Number} , dist::Float64, label::String )
 ```
-Add a bond with the given attributes to UnitCell.
-If given mat attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
+Add a bond with the given attributes to `UnitCell`.
+If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 
 """
 function addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String )
@@ -153,15 +157,15 @@ function addAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offse
 end
 
 
-@doc """
+@doc raw"""
 ```julia
 addIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
 addIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Matrix{<:Number} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
 ```
 Add a set of "isotropic" bonds, which are the same for each pair of sites at the given distance. 
-If given mat attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
-The input checkOffsetRange must be adjusted depending on the input distance. 
-The optional inpit subs is meant for isotropic bonds when only a subset of sublattices are involved.
+If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
+The input `checkOffsetRange` must be adjusted depending on the input distance. 
+The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
 
 """
 function addIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
@@ -210,7 +214,7 @@ end
 ModifyBonds!(uc::UnitCell, dist::Float64, newMat::Matrix{<:Number})
 ModifyBonds!(uc::UnitCell, label::String, newMat::Matrix{<:Number})
 ```
-Modify an existing bond in the UnitCell with the given label, or at a given distance, to the given bond matrix.
+Modify an existing bond in the `UnitCell` with the given `label`, or at a given distance=`dist`, to the given bond matrix.
 
 """
 function ModifyBonds!(uc::UnitCell, dist::Float64, newMat::Matrix{<:Number})
@@ -231,7 +235,7 @@ end
 ScaleBonds!(uc::UnitCell, dist::Float64, scale::Number)
 ScaleBonds!(uc::UnitCell, label::String, scale::Number)
 ```
-Scale the matrix of an existing bond in the UnitCell with the given label, or at a given distance, by the given scaling factor.
+Scale the matrix of an existing bond in the `UnitCell` with the given `label`, or at a given distance=`dist`, by the given scaling factor.
 
 """
 function ScaleBonds!(uc::UnitCell, dist::Float64, scale::Number)
@@ -250,10 +254,9 @@ end
 RemoveBonds!(uc::UnitCell, dist::Float64)
 ScaleBonds!(uc::UnitCell, label::String)
 ```
-Remove an existing bond in the UnitCell with the given label, or at a given distance.
+Remove an existing bond in the `UnitCell` with the given `label`, or at a given distance=`dist`.
 
 """
-
 function RemoveBonds!(uc::UnitCell, label::String )
 	labels 	=	getfield.(uc.bonds, :label)
 	deleteat!( uc.bonds , findall(==(label), labels) )
@@ -270,7 +273,7 @@ end
 ModifyFields!(uc::UnitCell, site::Int64, newField::Vector{Float64})
 ModifyFields!(uc::UnitCell, newField::Vector{Vector{Float64}})
 ```
-Modify the on-site fields in the UnitCell, either one at a time, or all of them.
+Modify the on-site fields in the `UnitCell`, either one at a time, or all of them.
 
 """
 function ModifyFields!(uc::UnitCell, site::Int64, newField::Vector{Float64})
