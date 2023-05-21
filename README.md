@@ -14,3 +14,5 @@ Currently supported :
 * Getting correlation functions
 * Getting Berry curvature and Chern numbers
 * Getting magnetic susceptibility in any direction, at any momentum, and energy
+
+For more details, please see [Documentation](https://anjishnubose.github.io/TightBindingToolkit.jl/dev/)
