@@ -60,12 +60,12 @@ mutable struct BZ
 end
 
 
-@doc """
+@doc raw"""
 ```julia
 Monkhorst(ind::Int64, N::Int64) --> Float64
 ```
 The Monkhorst grid is defined as follows
-`` [\\frac{2i - (N+1)}{2N}, i∈[1, N]] ``
+`` [\frac{2i - (N+1)}{2N}, i∈[1, N]] ``
 
 """
 function Monkhorst(ind::Int64, N::Int64) :: Float64
