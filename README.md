@@ -4,6 +4,18 @@
 
 TightBindingToolkit.jl is a Julia package meant for constructing, and obtaining useful properties of generic tight-binding models. It supports any lattice structure, with any user-defined bonds on that lattice. It also has support for any spin of the particle hopping on the lattice.
 
+## Install
+In the Julia REPL, Push "]" to enter the package mode.
+```julia
+add TightBindingToolkit
+```
+Or equivalently
+```julia
+using Pkg
+Pkg.add("TightBindingToolkit")
+```
+
+## Features
 Currently supported :
 * Custom Unit Cell Construction
 * Corresponding Brillouin Zone Construction
