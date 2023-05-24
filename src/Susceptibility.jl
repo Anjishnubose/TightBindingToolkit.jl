@@ -36,11 +36,11 @@ mutable struct susceptibility
 end
 
 
-@doc """
+@doc raw"""
 ```julia
 nF_factor(Q_index::Vector{Int64}, Omega::Float64 , M::Model; eta::Float64=1e-2) --> Matrix{Matrix{ComplexF64}}
 ```
-function to calculate (nF(E(k)) - nF(E(k+Q))) / (Ω + i * η - (E(k+Q) - E(k))) for a general multi-band system, at all k-points.
+function to calculate ``(nF(E(k)) - nF(E(k+Q))) / (Ω + i * η - (E(k+Q) - E(k)))`` for a general multi-band system, at all k-points.
 
 """
 function nF_factor(Q_index::Vector{Int64}, Omega::Float64 , M::Model; eta::Float64=1e-2) :: Matrix{Matrix{ComplexF64}}
@@ -105,7 +105,7 @@ end
 
 @doc """
 ```julia
-FindChi_FullBZ(Omega::Float64 , M::Model ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Matrix{ComplexF64}
+FindChi_Path(Omega::Float64 , M::Model, path::Vector{Vector{Float64}} ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Vector{ComplexF64}
 ```
 function to calculate susceptibility at a fixed Ω=`Omega`, but for all `Q` present in the given path, and along a fixed direction given by `a` and `b`.
 
@@ -117,7 +117,7 @@ end
 
 @doc """
 ```julia
-FindChi_FullBZ(Omega::Float64 , M::Model ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Matrix{ComplexF64}
+FillChis!(chi::susceptibility; fill_BZ::Bool=false, a::Int64=3, b::Int64=3)
 ```
 function to calculate susceptibility at a all given Ω=`Omegas`, but for all `Q` present in the given path, and along a fixed direction given by `a` and `b`.
 
@@ -127,10 +127,10 @@ function FillChis!(chi::susceptibility; fill_BZ::Bool=false, a::Int64=3, b::Int6
 
     if fill_BZ
         chis    =   FindChi_FullBZ.(chi.Omegas, Ref(chi.M) ; a=a, b=b, eta=chi.Spread)
-        @cast chisNew[i, j, k] |= chis[i][j, k] / length(bz.ks);
+        @cast chisNew[i, j, k] |= chis[i][j, k] / length(chi.M.bz.ks);
     else
         chis    =   FindChi_Path.(chi.Omegas, Ref(chi.M), Ref(chi.Qs) ; a=a, b=b, eta=chi.Spread)
-        @cast chisNew[i, j] |= chis[i][j] / length(bz.ks);
+        @cast chisNew[i, j] |= chis[i][j] / length(chi.M.bz.ks);
     end
 
     chi.chis[directions[a] * directions[b]]     =   chisNew
