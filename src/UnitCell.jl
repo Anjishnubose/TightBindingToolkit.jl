@@ -25,7 +25,7 @@ end
 Function to check if two bond objects are describing the same physical bond, just inverted! 
 """
 function isSameBond( Bond1::Bond , Bond2::Bond ) :: Bool
-	if Bond1.base==Bond2.target && Bond1.target == Bond2.base && Bond1.offset == -Bond2.offset
+	if Bond1.base==Bond2.target && Bond1.target == Bond2.base && Bond1.offset == -Bond2.offset && Bond1.label==Bond2.label
 		return true
 	else
 		return false
