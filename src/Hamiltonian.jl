@@ -37,7 +37,7 @@ function FillHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector
 end
 
 
-@doc """
+@doc raw"""
 ```julia
 FullHamiltonian(uc::UnitCell, bz::BZ) --> Matrix{Matrix{ComplexF64}}
 ```
@@ -97,21 +97,24 @@ DOS(Omegas::Vector{Float64}, Ham::Hamiltonian; till_band::Int64=length(Ham.bands
 ```
 Calculate the Density of State correspondingto the given energies in `Omegas`, for the lowest bands upto `till_band`.
 The calculation is done at a finite `spread` of the delta-function sum. 
-
 """
-function DOS(Omega::Float64, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) :: Float64
+function DOS(Omega::Float64, energies::Vector{Float64}; spread::Float64=1e-3) :: Float64
 
-    energies    =   reduce(vcat, Ham.bands)
-    n_bands     =   length(Ham.bands[1, 1])
-    energies    =   energies[filter(i -> (i-1) % n_bands + 1 <= till_band, 1:length(energies))]
-    dos         =   @. 1 / (Omega - energies + im * spread)
-    dos         =   imag(sum(dos))
-    return dos
+    dos         =   @. 1 / ((Omega - energies) + im * spread)
+    return sum(imag(dos))
 end
 
 function DOS(Omegas::Vector{Float64}, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) :: Vector{Float64}
 
-    dos     =   DOS.(Omegas, Ref(Ham); till_band=till_band, spread=spread)
-    dos     =   @. dos / sum(dos)
+    energies    =   reduce(vcat, Ham.bands)
+    n_bands     =   length(Ham.bands[1, 1])
+    energies    =   energies[filter(i -> (i-1) % n_bands + 1 <= till_band, 1:length(energies))]
+
+    dos     =   DOS.(Omegas, Ref(energies); spread=spread)
+
+    dOmega  =   Omegas[2:end] .- Omegas[1:end-1]
+    norm    =   sum(dos[1:end-1] .* dOmega)
+
+    dos     .=  dos ./ norm
     return dos
 end
