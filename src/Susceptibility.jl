@@ -4,6 +4,7 @@ include("SpinMats.jl")
 using LinearAlgebra
 using TensorCast
 using MappedArrays
+using Tullio
 
 directions = ["x" , "y" , "z"]
 
@@ -81,10 +82,10 @@ function FindChi(Q::Vector{Float64}, Omega::Float64 , M::Model; a::Int64=3, b::I
     if a!=b
         Ma      =   adjoint.(UkQ) .* Ref(Qa) .* Uk
         Mb      =   adjoint.(UkQ) .* Ref(Qb) .* Uk
-        chi     =   -tr(sum(map( .* , Ma, mappedarray(conj , Mb)) .* nF))
+        @tullio chi     :=   - Ma[k1, k2][i, j] * conj(Mb[k1, k2][i, j]) * nF[k1, k2][j, i]
     else
         Ma      =   adjoint.(UkQ) .* Ref(Qa) .* Uk
-        chi     =   -tr(sum(map( .* , Ma, mappedarray(conj , Ma)) .* nF))
+        @tullio chi     :=   - Ma[k1, k2][i, j] * conj(Ma[k1, k2][i, j]) * nF[k1, k2][j, i]
     end
 
     return chi 
