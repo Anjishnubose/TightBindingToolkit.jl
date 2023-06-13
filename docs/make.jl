@@ -8,6 +8,7 @@ makedocs(
     pages = [
         "Introduction"              =>  "index.md",
         "Unit Cell"                 =>  "UnitCell.md",
+        "Parameters"                =>  "Params.md",
         "Brillouin Zone"            =>  "BZ.md",
         "Hamiltonian"               =>  "Hamiltonian.md",
         "Tight Binding Model"       =>  "Model.md",

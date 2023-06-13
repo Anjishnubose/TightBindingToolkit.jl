@@ -1,7 +1,7 @@
-# TightBindingToolkit.UnitCell
+# TightBindingToolkit.Params
 
 ```@autodocs
 Modules = [TightBindingToolkit]
 Private = false
-Pages   = ["UnitCell.jl"]
+Pages   = ["Params.jl"]
 ```
