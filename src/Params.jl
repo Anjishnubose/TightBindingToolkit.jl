@@ -18,8 +18,9 @@ module Parameters
 
 	Initialize this structure using 
 	```julia
-	Param( value::Float64 ) = new{}( [value] , Bond[], "", -1.0 )
+	Param( value::Float64 )
 	```
+
 	"""
     mutable struct Param  
         value       ::  Vector{Float64}
@@ -83,7 +84,7 @@ module Parameters
     end
 
 
-    @doc raw"""
+    @doc """
 	```julia
 	addIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
 	addIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Matrix{<:Number} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
@@ -92,6 +93,7 @@ module Parameters
 	If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 	The input `checkOffsetRange` must be adjusted depending on the input distance. 
 	The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
+
     """
     function addIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
 
@@ -189,14 +191,14 @@ module Parameters
 
 
     @doc """
-	```julia
-	GetParams(uc::UnitCell)
-	```
-	For legacy purposes!!!. 
-    If you have a UnitCell built using the old technique of adding bonds directly, you can get a vector of `Param` using this function, corresponding to each unique bond type already present in `UnitCell`.
+	``` @raw julia
+    GetParams(uc::UnitCell) --> Vector{Param}
+    ```
+	For legacy purposes. 
+    If you have a `UnitCell` built using the old technique of adding bonds directly, you can get a vector of `Param` using this function, corresponding to each unique bond type already present in `UnitCell`.
 
 	"""
-    function GetParams(uc::UnitCell)
+    function GetParams(uc::UnitCell) :: Vector{Param}
         
         params  =   Param[]
         for bond in uc.bonds
