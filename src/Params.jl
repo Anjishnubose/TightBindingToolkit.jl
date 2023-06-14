@@ -9,19 +9,19 @@ module Parameters
 
     @doc """
 	`Param` is a data type representing a general tight-binding parameter, which can span multiple bonds.
-
+	
 	# Attributes
 	- `value        ::  Vector{ Float64 }`: the strength of the parameter (or even the full history of it if its changed).
 	- `unitBonds    ::  Vector{ Bond }`: All the bonds this parameter lives on. These bonds are supposed to have "unit" strength, and ultimately get scaled by the `value` when making the `UnitCell`.
-    - `label        ::  String`: some string label to mark the parameter.  
-    - `dist         ::  Float64`: the distance of the bonds the parameter lives on.
-
+	- `label        ::  String`: some string label to mark the parameter.  
+	- `dist         ::  Float64`: the distance of the bonds the parameter lives on.
+	
 	Initialize this structure using 
 	```julia
 	Param( value::Float64 )
 	```
-
-	"""
+	
+    """
     mutable struct Param  
         value       ::  Vector{Float64}
         unitBonds   ::  Vector{Bond} 
@@ -191,13 +191,13 @@ module Parameters
 
 
     @doc """
-	``` @raw julia
-    GetParams(uc::UnitCell) --> Vector{Param}
-    ```
+	```julia
+    	GetParams(uc::UnitCell) --> Vector{Param}
+    	```
 	For legacy purposes. 
-    If you have a `UnitCell` built using the old technique of adding bonds directly, you can get a vector of `Param` using this function, corresponding to each unique bond type already present in `UnitCell`.
+    	If you have a `UnitCell` built using the old technique of adding bonds directly, you can get a vector of `Param` using this function, corresponding to each unique bond type already present in `UnitCell`.
 
-	"""
+    """
     function GetParams(uc::UnitCell) :: Vector{Param}
         
         params  =   Param[]
