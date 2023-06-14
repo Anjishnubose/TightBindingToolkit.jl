@@ -4,7 +4,8 @@ using TightBindingToolkit
 makedocs(
     build       =   "build" ,
     sitename    =   "TightBindingToolkit.jl"    ,
-    modules     =   Module[TightBindingToolkit]   ,
+    modules     =   [TightBindingToolkit, TightBindingToolkit.UCell, TightBindingToolkit.Parameters, TightBindingToolkit.BZone, TightBindingToolkit.Hams, 
+                            TightBindingToolkit.TBModel, TightBindingToolkit.Chern, TightBindingToolkit.suscep]   ,
     pages = [
         "Introduction"              =>  "index.md",
         "Unit Cell"                 =>  "UnitCell.md",

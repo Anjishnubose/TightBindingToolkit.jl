@@ -1,7 +1,7 @@
 # TightBindingToolkit.Chern
 
 ```@autodocs
-Modules = [TightBindingToolkit]
+Modules = [TightBindingToolkit, TightBindingToolkit.Chern]
 Private = false
 Pages   = ["Chern.jl"]
 ```

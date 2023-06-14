@@ -1,7 +1,7 @@
 # TightBindingToolkit.Hamiltonian
 
 ```@autodocs
-Modules = [TightBindingToolkit]
+Modules = [TightBindingToolkit, TightBindingToolkit.Hams]
 Private = false
 Pages   = ["Hamiltonian.jl"]
 ```
