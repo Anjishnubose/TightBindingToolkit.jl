@@ -1,5 +1,4 @@
-using Plots
-using TightBindingToolkit
+using Plots, LinearAlgebra, TightBindingToolkit, LaTeXStrings
 
 """
 This script sets up the famous Haldane Model on a honeycomb lattice, and finds it chern numbers.
@@ -57,7 +56,7 @@ fillBZ!(bz, UC)
 """
 Spanning over different t2/M values
 """
-t2s     =   range(-1.0, 1.0, 11) * M  
+t2s     =   range(-1.0, 1.0, 51) * M  
 gaps    =   Float64[]
 mus     =   Float64[]
 Cherns  =   Float64[]
@@ -88,7 +87,7 @@ for t2Val in t2s
     push!(Cherns, chern)
 end
 
-chernPlot   = plot(t2s, Cherns, labels="chern", lw=3, markershape = :circle )
+chernPlot   = plot(t2s, Cherns, labels="chern", lw=3, markershape = :circle, markercolor=:red )
 
 
 
