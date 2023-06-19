@@ -4,9 +4,9 @@ module TBModel
     using ..TightBindingToolkit.BZone:BZ
     using ..TightBindingToolkit.Hams:Hamiltonian
 
-    export Model , dist , distDer , findFilling , getMu! , getFilling! , getCount , getGk! , SolveModel!
+    export Model , dist , distDer , findFilling , getMu! , getFilling! , getCount , getGk! , SolveModel!, BinarySearch
 
-    using LinearAlgebra
+    using LinearAlgebra, Statistics
 
 
     @doc """
@@ -21,7 +21,7 @@ module TBModel
     - `mu      ::  Float64`: The chemical potential of the system.
     - `stat    ::  Int64` : ±1 for bosons and fermions.
     - `gap     ::  Float64` : the energy gap of excitations at the given filling.
-    - `Gk      ::  Matrix{Matrix{ComplexF64}}` : A matrix (corresponding to the matrix of k-points in `BZ`) of Greens functions.
+    - `Gk      ::  Array{Matrix{ComplexF64}}` : An array (corresponding to the grid of k-points in `BZ`) of Greens functions.
 
     Initialize this structure using 
     ```julia
@@ -38,10 +38,10 @@ module TBModel
         mu      ::  Float64         ##### Chemical potential
         stat    ::  Int64           ##### +1 for bosons, -1 for fermions
         gap     ::  Float64
-        Gk      ::  Matrix{Matrix{ComplexF64}}
-        Gr      ::  Matrix{Matrix{ComplexF64}}
+        Gk      ::  Array{Matrix{ComplexF64}}
+        Gr      ::  Array{Matrix{ComplexF64}}
         
-        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=0.0, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, 0.0, Array{Matrix{ComplexF64}}(undef, 0, 0), Array{Matrix{ComplexF64}}(undef, 0, 0))
+        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=0.0, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, 0.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
         ##### Chosen the default value of filling to be -1 which is unphysical so that the code knows when filling has not been provided and has to be calculated from mu instead!
     end
 
@@ -77,38 +77,46 @@ module TBModel
     Find filling at given `T`=temperature and `mu`=chemical potential, for a given `bands`.
 
     """
-    function findFilling(bands::Vector{Float64}, mu::Float64, T::Float64, stat::Int64=-1) :: Float64
+    function findFilling( mu::Float64, bands::Vector{Float64}, T::Float64, stat::Int64=-1) :: Float64
         return sum(dist(bands; T=T, mu=mu, stat=stat)) / length(bands)
     end
 
+    ##### General function implementing Binary search on a monotonic function f(x, args...)=target, in the range x ∈ xRange, with tolerance tol. 
+    function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; tol::Float64=0.001) where T<:Function
+        xExt = collect(xRange)
+        current = nothing
+    
+        steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(tol))))
+        for i in 1:steps
+            current = mean(xExt)
+            check = f(current, args...)
+            if check > target
+                xExt[end] = current
+            elseif check < target
+                xExt[begin] = current
+            else
+                break
+            end
+        end
+    
+        return current
+    end
 
     @doc """
     ```julia
-    getMu!(M::Model, tol::Float64=0.001)
+    getMu!(M::Model; tol::Float64=0.001)
     ```
     Function to get chemical potential for a given `Model`, within a tolerance.
 
     """
-    function getMu!(M::Model, tol::Float64=0.001)
-        energies    =   sort(reduce(vcat, M.Ham.bands))
+    function getMu!(M::Model ;  tol::Float64=0.001)
+    
         if M.T≈0.0
+            energies  =   sort(reduce(vcat, M.Ham.bands))
             M.mu      =   (energies[floor(Int64, length(energies)*M.filling)] + energies[floor(Int64, length(energies)*M.filling)+1])/2
         else
-            muExt       =   collect(extrema(energies))
-            guess       =   Nothing
-            steps       =   Int(ceil(log2((muExt[end]-muExt[1])/(tol))))
-            for i in 1:steps
-                guess   =   mean(muExt)
-                check   =   findFilling(M.Ham.bands, guess, M.T, M.stat)
-                if check>M.filling
-                    muExt[end]  =   guess
-                elseif check<M.filling
-                    muExt[1]    =   guess
-                else
-                    break
-                end
-            end
-            M.mu  =   guess
+            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, findFilling, (M.Ham.bands, M.T, M.stat) ; tol=tol)
+            println("Found chemical potential for given filling.")
         end
     end
 
@@ -125,7 +133,7 @@ module TBModel
             energies    =   sort(reduce(vcat, M.Ham.bands))
             M.filling   =   searchsortedlast(energies, M.mu) / length(energies)
         else
-            M.filling   =   findFilling(reduce(vcat, M.Ham.bands), M.mu, M.T, M.stat)
+            M.filling   =   findFilling( M.mu, reduce(vcat, M.Ham.bands), M.T, M.stat)
         end
     end
 
@@ -163,13 +171,15 @@ module TBModel
 
     """
     function SolveModel!(M::Model)
-        energies    =   sort(reduce(vcat, M.Ham.bands))
+
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
             getFilling!(M)
         else
             getMu!(M)
         end
+        energies  =   sort(reduce(vcat, M.Ham.bands))
         M.gap     =   energies[floor(Int64, length(energies)*M.filling) + 1] - energies[floor(Int64, length(energies)*M.filling)]
+    
         getGk!(M)
         println("System filled!")
     end
