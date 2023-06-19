@@ -4,7 +4,7 @@ TightBindingToolkit.jl is a Julia package meant for constructing, and obtaining 
 
 Currently supported :
 * Custom Unit Cell Construction. (v1.3) : now also supports construction in dimensions upto d=3.
-    |![Alt text](../Figures/Honeycomb_123NN_UC.png)|
+    |![Alt text](../assets/Honeycomb_123NN_UC.png)|
     |*Honeycomb Model with 1st, 2nd and 3rd neighbour hoppings.*|
 * Corresponding Brillouin Zone Construction. (v1.3) : now also supports construction in dimensions upto d=3.
 * Hamiltonian, given a Unit Cell and a Brillouin Zone. (v1.3) : now also support BdG Hamiltonians.
