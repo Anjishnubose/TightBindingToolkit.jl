@@ -74,7 +74,7 @@ module suscep
         Qa      =   kron(expQ , SpinVec[a])
         Qb      =   kron(expQ , SpinVec[b])
 
-        Q_index =   GetQIndex(Q, M.bz) .- [(M.bz.gridSize + 1)÷2 , (M.bz.gridSize + 1)÷2]
+        Q_index =   GetQIndex(Q, M.bz) .- ((M.bz.gridSize .+ 1) .÷ 2)
         nF      =   nF_factor(Q_index, Omega , M; eta=eta)
 
         Uk      =   M.Ham.states
@@ -125,7 +125,7 @@ module suscep
 
     """
     function FillChis!(chi::susceptibility; fill_BZ::Bool=false, a::Int64=3, b::Int64=3)
-        @assert chi.M.bz.gridSize%2==1  "Only works if the Gamma point is included in the grid ---> grid size must be odd!"
+        @assert prod(chi.M.bz.gridSize .% 2) == 1  "Only works if the Gamma point is included in the grid ---> grid size must be odd!"
 
         if fill_BZ
             chis    =   FindChi_FullBZ.(chi.Omegas, Ref(chi.M) ; a=a, b=b, eta=chi.Spread)
