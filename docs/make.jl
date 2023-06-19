@@ -13,8 +13,10 @@ makedocs(
         "Brillouin Zone"            =>  "BZ.md",
         "Hamiltonian"               =>  "Hamiltonian.md",
         "Tight Binding Model"       =>  "Model.md",
+        "BdG Model"                 =>  "BdGModel.md",
         "Chern Numbers"             =>  "Chern.md",
-        "Magnetic susceptibility"   =>  "susceptibility.md"  
+        "Magnetic susceptibility"   =>  "susceptibility.md"  ,
+        "Plotting"                  =>  "Plot.md"
     ]
 )
 
