@@ -1,5 +1,5 @@
 module UCell
-	export Bond , isSameBond , UnitCell , getDistance , addBasisSite! , addAnisotropicBond! , addIsotropicBonds! , ModifyBonds! , ScaleBonds! , RemoveBonds! , ModifyFields!, ModifyIsotropicFields!
+	export Bond , isSameBond , UnitCell , isSameUnitCell , getDistance , addBasisSite! , addAnisotropicBond! , addIsotropicBonds! , ModifyBonds! , ScaleBonds! , RemoveBonds! , ModifyFields!, ModifyIsotropicFields!
 
 	using LinearAlgebra
 
@@ -68,6 +68,31 @@ module UCell
 
 	end 
 
+	@doc """
+	```julia
+	isSameUnitCell(uc_1::UnitCell, uc_2::UnitCell) --> Bool
+	```
+	Function to check if two unit cell live on the same underlying lattice or not, i.e. have the same `primitives`, same `sublattices`, and same `localDim`.
+
+	"""
+	function isSameUnitCell(uc_1::UnitCell, uc_2::UnitCell) :: Bool
+		
+		check 	=	true
+		for attribute in [:primitives, :basis, :localDim]
+			prop1 	=	getproperty(uc_1, attribute)
+			prop2 	=	getproperty(uc_2, attribute)
+
+			if length(prop1)!=length(prop2)
+				check 	=	false
+				return check
+			else
+				check 	=	check && isapprox(prop1, prop2, atol=1e-3, rtol=1e-3)
+			end
+		end
+
+		return check
+	end
+
 
 	@doc """
 	```julia
@@ -90,7 +115,7 @@ module UCell
 	"""
 	function addBasisSite!( uc::UnitCell , position::Vector{Float64} )
 		push!( uc.basis , position )
-		push!( uc.fields , zeros(Float64 , 3) )
+		push!( uc.fields , zeros(Float64 , 4) )
 	end
 
 	function addBasisSite!( uc::UnitCell , position::Vector{Float64} , field::Vector{Float64} )
@@ -281,6 +306,11 @@ module UCell
 	"""
 	function ModifyFields!(uc::UnitCell, site::Int64, newField::Vector{Float64})
 		uc.fields[site] 	=	newField
+	end
+
+	function ModifyFields!(uc::UnitCell, newField::Vector{Float64}, dim::Int64)
+		@assert length(newField) == length(uc.basis)
+		setindex!.(uc.fields, newField, Ref(dim))
 	end
 
 	function ModifyFields!(uc::UnitCell, newField::Vector{Vector{Float64}})
