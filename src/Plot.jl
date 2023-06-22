@@ -135,9 +135,11 @@ module PlotTB
             hline!([M.mu], linestyle = :dash, label=L"\mu") 
         end
 
-        xticks!(label_indices, labels)
-        if closed && !isempty(labels)
-            xticks!(length(bzpath), labels[begin])
+        
+        if !closed 
+            xticks!(label_indices, labels)
+        else
+            xticks!(vcat(label_indices , [length(bzpath)]), vcat(labels , [labels[begin]]))
         end
 
         xlabel!("Path", guidefontsize = 9)
