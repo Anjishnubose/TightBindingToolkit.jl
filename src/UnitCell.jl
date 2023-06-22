@@ -1,5 +1,5 @@
 module UCell
-	export Bond , isSameBond , UnitCell , isSameUnitCell , getDistance , addBasisSite! , addAnisotropicBond! , addIsotropicBonds! , ModifyBonds! , ScaleBonds! , RemoveBonds! , ModifyFields!, ModifyIsotropicFields!
+	export Bond , isSameBond , UnitCell , isSameUnitCell , getDistance , addBasisSite! , addAnisotropicBond! , addIsotropicBonds! , ModifyBonds! , ScaleBonds! , RemoveBonds! , ModifyFields!, ModifyIsotropicFields!, Lookup
 
 	using LinearAlgebra
 
@@ -236,6 +236,32 @@ module UCell
 		end
 	end
 
+
+	@doc """
+	```julia
+	Lookup(uc::UnitCell) --> Dict
+	```
+	Returns a dictionary with keys = (base, target, offset) for bond ∈ `UnitCell` bond list, and the entry being the bond matrix. 
+	If there are multiple bonds with the same identifier, it adds them up.
+
+	"""
+	function Lookup(uc::UnitCell) :: Dict
+		lookupTable 	=	Dict()
+
+		for bond in uc.bonds
+			identifier 	=	(bond.base, bond.target, bond.offset)
+
+			if identifier in keys(lookupTable)
+				lookupTable[identifier] 	=	lookupTable[identifier] + bond.mat
+			elseif (bond.target, bond.base, -bond.offset) in keys(lookupTable)
+				lookupTable[identifier] 	=	lookupTable[identifier] + adjoint(bond.mat)
+			else
+				lookupTable[identifier] 	=	bond.mat
+			end
+		end
+
+		return lookupTable
+	end
 
 	@doc """
 	```julia

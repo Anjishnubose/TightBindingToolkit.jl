@@ -7,7 +7,7 @@ export SpinMats
 
 include("UnitCell.jl")
 using .UCell
-export Bond , isSameBond , UnitCell , isSameUnitCell , getDistance , addBasisSite! , addAnisotropicBond! , addIsotropicBonds! , ModifyBonds! , ScaleBonds! , RemoveBonds! , ModifyFields!, ModifyIsotropicFields!
+export Bond , isSameBond , UnitCell , isSameUnitCell , getDistance , addBasisSite! , addAnisotropicBond! , addIsotropicBonds! , ModifyBonds! , ScaleBonds! , RemoveBonds! , ModifyFields!, ModifyIsotropicFields!, Lookup
 
 include("Params.jl")
 using .Parameters
