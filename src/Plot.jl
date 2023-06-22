@@ -123,7 +123,7 @@ module PlotTB
 
         bands_from_index = getindex.(Ref(M.Ham.bands), CartesianIndex.(Tuple.(path_index)))
 
-        label_indices    = getindex.(findmin.([norm.(Ref(ReduceQ(x,M.bz)).-bzpath) for x in path]),2)
+        label_indices    = getindex.(findmin.([norm.(Ref(ReduceQ(x,M.bz)).-bzpath) for x in path]) , 2)
 
         plt = plot(grid=false)
         for j in band_index
@@ -132,10 +132,14 @@ module PlotTB
         if typeof(M)==BdGModel
             hline!([0.0], linestyle = :dash, label="") ##### Effective chemical potential in BdG
         else
-            hline!([M.mu], linestyle = :dash, label="") 
+            hline!([M.mu], linestyle = :dash, label=L"\mu") 
         end
 
         xticks!(label_indices, labels)
+        if closed && !isempty(labels)
+            xticks!(length(bzpath), labels[begin])
+        end
+
         xlabel!("Path", guidefontsize = 9)
         ylabel!("Energy", guidefontsize = 9)
         title!("Band Structure along path", titlefontsize = 12)
