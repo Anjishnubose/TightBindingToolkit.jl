@@ -1,7 +1,7 @@
 name = "TightBindingToolkit"
 uuid = "2233325a-6eb3-486f-aff0-670e0939fa7e"
 authors = ["Anjishnu Bose", "Sreekar Voleti", "Samuel Vadnais"]
-version = "1.3.2"
+version = "1.3.3"
 
 [deps]
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
