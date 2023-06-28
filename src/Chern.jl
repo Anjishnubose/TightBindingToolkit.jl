@@ -1,5 +1,5 @@
 module Chern
-    export FindLinks , FieldStrength , ChernNumber
+    export FindLinks , FieldStrength , ChernNumber, CheckValidity
 
     using ..TightBindingToolkit.Hams:Hamiltonian, isBandGapped
 

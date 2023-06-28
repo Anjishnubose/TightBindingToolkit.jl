@@ -1,5 +1,5 @@
 module BZone
-    export getRLVs , BZ , Monkhorst , fillBZ! , ReduceQ , GetQIndex , GetIndexPath , CombinedIndexPath , getBZPath , CombinedBZPath
+    export getRLVs , BZ , Monkhorst , fillBZ! , ReduceQ , GetQIndex , GetIndexPath , CombinedIndexPath , getBZPath , CombinedBZPath, meshgrid
  
     using LinearAlgebra
     using ..TightBindingToolkit.UCell: UnitCell
@@ -88,11 +88,7 @@ module BZone
     end
 
     function Monkhorst(ind::Int64, N::Int64, shift::Int64, BC::Float64) :: Float64
-        if N%2==0.0
-            return (1 / N) * (ind + shift - (N / 2) + (BC / (2 * pi)))
-        else
-            return (1 / N) * (ind + shift - ((N + 1) / 2) + (BC / (2 * pi)))
-        end
+        return (1 / N) * (ind + shift - ((N + 2 - (N % 2)) / 2) + (BC / (2 * pi)))
     end
 
     ##### Angle b/w two vectors

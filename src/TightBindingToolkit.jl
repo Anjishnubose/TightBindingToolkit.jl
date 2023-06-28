@@ -15,11 +15,11 @@ export Param, addAnisotropicBond!, addIsotropicBonds!, CreateUnitCell!, ModifyUn
 
 include("BZ.jl")
 using .BZone
-export getRLVs , BZ , fillBZ! , Monkhorst, ReduceQ , GetQIndex , GetIndexPath , CombinedIndexPath , getBZPath , CombinedBZPath
+export getRLVs , BZ , fillBZ! , Monkhorst, ReduceQ , GetQIndex , GetIndexPath , CombinedIndexPath , getBZPath , CombinedBZPath, meshgrid
 
 include("Hamiltonian.jl")
 using .Hams
-export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!
+export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, isBandGapped
 
 include("Model.jl")
 using .TBModel
@@ -31,7 +31,7 @@ export BdGModel, findFilling, getMu!, getFilling!, getGk!, SolveModel!
 
 include("Chern.jl")
 using .Chern
-export FindLinks , FieldStrength , ChernNumber
+export FindLinks , FieldStrength , ChernNumber, CheckValidity
 
 include("Susceptibility.jl")
 using .suscep

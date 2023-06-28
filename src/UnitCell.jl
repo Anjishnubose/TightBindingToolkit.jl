@@ -8,7 +8,7 @@ module UCell
 
 	# Attributes
 	- `base::Int64`: sub-lattice of the initial site on the bond.
-	- `base::Int64`: sub-lattice of the final site on the bond.
+	- `target::Int64`: sub-lattice of the final site on the bond.
 	- `offset::Vector{Int64}`: the difference of the unit cells in which these sublattices belong to, in units of the lattice basis vectors.
 	- `mat::Matrix{T}`: the matrtix describing this bond --> can be hopping for partons, or spin-exchange for spins.
 	- `dist::Float64`: the distance b/w the two sites = length of bond.
