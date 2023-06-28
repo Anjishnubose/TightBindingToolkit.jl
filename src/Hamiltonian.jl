@@ -1,11 +1,11 @@
 module Hams
-export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!
+export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, isBandGapped
 
     using ..TightBindingToolkit.SpinMatrices:SpinMats
     using ..TightBindingToolkit.UCell:UnitCell, isSameUnitCell, ModifyFields!, ModifyIsotropicFields!
     using ..TightBindingToolkit.BZone:BZ
 
-    using LinearAlgebra
+    using LinearAlgebra, TensorCast
 
     @doc """
     ```julia
@@ -166,6 +166,22 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
         end
     
         ModifyFields!(uc, newFields, dim)
+    end
+
+
+    @doc """
+    ```julia
+    isBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) --> BitMatrix
+    ```
+    Returns a matrix of booleans marked as `true` if the band corresponding to the row and column of the matrix are gapped (greater than the tolerance), and false otherwise. 
+
+    """
+    function isBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) :: BitMatrix
+        bands   =   reshape(H.bands, length(H.bands))
+        @cast bandDiff[i, j][k] |= abs(bands[k][i] - bands[k][j])
+        @cast gapped[i, j] |= minimum(bandDiff[i, j]) > tol
+
+        return gapped
     end
 
 

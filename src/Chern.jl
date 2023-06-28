@@ -1,7 +1,7 @@
 module Chern
     export FindLinks , FieldStrength , ChernNumber
 
-    using ..TightBindingToolkit.Hams:Hamiltonian
+    using ..TightBindingToolkit.Hams:Hamiltonian, isBandGapped
 
     using LinearAlgebra
 
@@ -50,6 +50,22 @@ module Chern
     end
 
 
+    function CheckValidity(Ham::Hamiltonian, subset::Vector{Int64})
+        bandGapped  =   isBandGapped(Ham)
+        bandGapped[begin, begin]    =   true
+        bandGapped[end, end]        =   true
+
+        occupied_bands  =   collect(extrema(subset))    #### Just need to check that the lowest and highest bands given are gapped or not
+        @assert subset == collect(UnitRange(occupied_bands...)) "Cannot skip bands in between!"
+
+        valence_bands   =   clamp.(occupied_bands + [-1, 1], Ref(1), Ref(length(Ham.bands[begin])))   ##### one below and one above the lowest and highest band given
+        check           =   prod(getindex.(Ref(bandGapped), occupied_bands, valence_bands))
+
+        @assert check "Given subset of bands have band touchings / degeneracies with other bands. Chern number is not well defined! "
+
+    end
+
+
     @doc """
     ```julia
     ChernNumber(Ham::Hamiltonian, subset::Vector{Int64}) --> Float64
@@ -57,7 +73,12 @@ module Chern
     Function to get Chern numbers given a `Hamiltonian` and a `subset` of bands
 
     """
-    function ChernNumber(Ham::Hamiltonian, subset::Vector{Int64})::Float64
+    function ChernNumber(Ham::Hamiltonian, subset::Vector{Int64} ; check_validity::Bool = false)::Float64
+
+        if check_validity
+            CheckValidity(Ham, subset)
+        end
+
         Links   =   FindLinks(Ham, subset)
         Field   =   FieldStrength(Links)
         chern   =   (1/(2*pi)) * sum(angle.(Field))
