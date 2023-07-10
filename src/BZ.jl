@@ -1,18 +1,20 @@
 module BZone
-    export getRLVs , BZ , Monkhorst , fillBZ! , ReduceQ , GetQIndex , GetIndexPath , CombinedIndexPath , getBZPath , CombinedBZPath, meshgrid
- 
-    using LinearAlgebra
+    export GetRLVs , BZ , Monkhorst , FillBZ! , ReduceQ , GetQIndex , CombinedIndexPath , GetBZPath , CombinedBZPath, MomentumPhaseFFT
+
+    using LinearAlgebra, Logging
+
+    using ..TightBindingToolkit.Useful: Meshgrid, VecAngle, GetIndexPath
     using ..TightBindingToolkit.UCell: UnitCell
 
 
     @doc """
     ```julia
-    getRLVs( uc::UnitCell ) --> Vector{Vector{Float64}}
+    GetRLVs( uc::UnitCell ) --> Vector{Vector{Float64}}
     ```
     Returns the reciprocal lattice vectors corresponding to the given Unit Cell.
 
     """
-    function getRLVs( uc::UnitCell ) :: Vector{Vector{Float64}}
+    function GetRLVs( uc::UnitCell ) :: Vector{Vector{Float64}}
         if length(uc.primitives) == 1
             return [2 *pi ./ uc.primitives[1]]
 
@@ -33,7 +35,7 @@ module BZone
             return [ b1 , b2 , b3 ]
 
         else
-            print("This code only works for 2D and 3D lattices. ")
+            @warn "Getting reciprocal lattice vectors only works for upto d=3 lattices right now."
         end
     end
 
@@ -65,8 +67,9 @@ module BZone
     
         BZ(gridSize::Vector{Int64})         =   new{}(Vector{Float64}[],  gridSize, Array{Float64, length(gridSize)}[], Array{Vector{Float64}}(undef, zeros(Int64, length(gridSize))...), Dict(), Int64[])
         BZ(gridSize::Int64, dims::Int64) 	=	new{}(Vector{Float64}[], repeat([gridSize], dims), Array{Float64, dims}[], Array{Vector{Float64}}(undef, zeros(Int64, dims)...), Dict(), Int64[])
+        
         function BZ(gridSize::Int64)
-            println("WARNING : positional argument `dims' not passed in BZ. Resorting to its default value of 2.")
+            @warn "Positional argument `dims' not passed in BZ. Resorting to its default value of 2."
             dims 	=	2
             return   new{}(Vector{Float64}[], repeat([gridSize], dims), Array{Float64, dims}[], Array{Vector{Float64}}(undef, zeros(Int64, dims)...), Dict(), Int64[])
         end
@@ -91,22 +94,7 @@ module BZone
         return (1 / N) * (ind + shift - ((N + 2 - (N % 2)) / 2) + (BC / (2 * pi)))
     end
 
-    ##### Angle b/w two vectors
-    function VecAngle(a::Vector{Float64}, b::Vector{Float64})
-        return acos(clamp(a⋅b/(norm(a)*norm(b)), -1, 1))
-    end
-
-    ##### returns a meshgrid of (i_1, i_2, ..., i_n) such that i_j ∈ [1, 2, ..., grid[j]] ∀ j in [1, 2, ..., n = length(grid)]
-    function meshgrid(grid::Vector{Int64})
-        inds    =   []
-        for dim in 1:length(grid)
-            push!(inds, 1:grid[dim])
-        end
-
-        inds    =   collect(Base.product(inds...))
-        return inds
-    end
-
+    
     ##### Adds high symmetry points to the bz dictionary
     function AddHighSymPoints!(bz::BZ)
         dims    =   length(bz.basis)
@@ -140,23 +128,23 @@ module BZone
 
     @doc """
     ```julia
-    fillBZ!(bz::BZ, uc::UnitCell ; shift::Vector{Float64}=zeros(Float64, length(uc.primitives)))
+    FillBZ!(bz::BZ, uc::UnitCell ; shift::Vector{Float64}=zeros(Float64, length(uc.primitives)))
     ```
     Fills the `BZ` object with the relevant attributes, after it has been initialized with `BZ(gridSize)`.
 
     """
-    function fillBZ!(bz::BZ, uc::UnitCell; shift::Vector{Int64}=zeros(Int64, length(uc.primitives)))
+    function FillBZ!(bz::BZ, uc::UnitCell; shift::Vector{Int64}=zeros(Int64, length(uc.primitives)))
 
-        bz.basis    =   getRLVs(uc)   ##### Get the reciprocal basis
+        bz.basis    =   GetRLVs(uc)   ##### Get the reciprocal basis
         bz.shift    =   shift
         dims 		=	length(uc.primitives)
 
         @assert length(bz.gridSize) == dims "Inconsistent dimensions of UnitCell and BZ"
         @assert length(bz.basis)<=3 "Sorry, the code is only written for upto 3 dimensions right now!"
 
-        inds    =   meshgrid(bz.gridSize)
+        inds    =   Meshgrid(bz.gridSize)
 
-        ##### getting the meshgrid of Monkhorst coefficients of the BZ grid
+        ##### Getting the Meshgrid of Monkhorst coefficients of the BZ grid
         for dim in 1:dims
             index   =   getindex.(inds, dim)
             push!(bz.kInds, Monkhorst.(index, Ref(bz.gridSize[dim]), Ref(shift[dim]), Ref(angle(uc.BC[dim]))))
@@ -180,6 +168,7 @@ module BZone
 
     """
     function ReduceQ(Q::Vector{Float64}, bz::BZ) :: Vector{Float64}
+
         U           =   reduce(hcat, bz.basis) ##### basis transformation from x, y -> b1, b2
         Q_reduced   =   inv(U) * (Q)  ##### Q in the basis of b1 and b2
         Q_reduced   =   Q_reduced .- round.(Q_reduced .- (bz.shift ./ bz.gridSize))  ##### Q in the basis of b1 and b2, and shifted back to the first BZ
@@ -206,36 +195,8 @@ module BZone
         else
             inds    =   findmin(norm.(bz.ks .- Ref(Q_reduced)))[2]
         end
+
         return collect(Tuple(inds))
-    end
-
-
-    @doc """
-    ```julia
-    GetIndexPath(start::Vector{Int64}, ending::Vector{Int64} ; exclusive::Bool=true) --> Vector{Vector{Int64}}
-    ```
-    Returns a path in index-space of the discretized `BZ` which joins the two sets of indices `start` and `ending`. 
-    If the input `exclusive` is set to `true`, the returned path will NOT contain the `ending` point itself.
-    Works in any dimensions.
-
-    """
-    function GetIndexPath(start::Vector{Int64}, ending::Vector{Int64} ; exclusive::Bool=true) :: Vector{Vector{Int64}}
-    
-        dx = ending - start
-        i = findfirst(!=(0), dx)    ##### find the first dimension where the two given points differ.
-        ts = (1/abs(dx[i])) .* collect(0:abs(dx[i]) - exclusive)    ##### choosing the paramtrization of a straight line in generalized dimensiosn s.t. the increment is ±1 along this dimension.
-    
-        coords = []
-        for j in 1:length(start)
-            xj = start[j] .+ (dx[j] .* ts)  ##### a straight line in generalized dimensions b/w two given points : (x[j] - start[j]) / (ending[j] - start[j]) = t ∈ [0, 1] 
-            push!(coords, round.(Int64, xj))
-        end
-    
-        coords = reduce(hcat, coords)   ##### combining all sets of indices into sets of points
-        path = Vector{eltype(coords)}[eachrow(coords)...]
-    
-        return path
-    
     end
 
 
@@ -243,7 +204,7 @@ module BZone
     ```julia
     CombinedIndexPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) --> Vector{Vector{Int64}}
     ```
-    Returns a path in index-space joins the given momentum points present in `points` as point[1] --> point[2] --> ... --> point[end] --> point[1].
+    Returns a path in index-space joins the given points present in `points` as point[1] --> point[2] --> ... --> point[end] --> point[1].
     The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `closed` determines if the path is a closed loop or not.
 
     """
@@ -266,13 +227,13 @@ module BZone
 
     @doc """
     ```julia
-    getBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) --> Vector{Vector{Float64}}
+    GetBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) --> Vector{Vector{Float64}}
     ```
     Returns the actual path in momentum-space of the discretized `BZ` which joins the two momentums `start` and `ending`. 
     The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `exclusive` is the same as in [`GetIndexPath`](@ref).
 
     """
-    function getBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) :: Vector{Vector{Float64}}
+    function GetBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) :: Vector{Vector{Float64}}
 
         start_ind   =   GetQIndex(start, bz ; nearest=nearest)
         end_ind     =   GetQIndex(ending, bz ; nearest=nearest)
@@ -300,10 +261,21 @@ module BZone
             endings =   copy(points[2:end])
         end
 
-        paths   =   getBZPath.(Ref(bz), starts, endings ; nearest = nearest , exclusive = true)
+        paths   =   GetBZPath.(Ref(bz), starts, endings ; nearest = nearest , exclusive = true)
         paths   =   reduce(vcat, paths)
 
         return paths
+    end
+
+
+    ##### Momentum pahse factors needed when doing FFT
+    function MomentumPhaseFFT(bz::BZ, uc::UnitCell)
+
+        momentumShift  =   (2 * pi) .* (bz.shift .+ Ref(1) .- ((bz.gridSize .+ 2 .- (bz.gridSize .% 2)) / 2) + (angle.(uc.BC) / (2 * pi))) ./ (bz.gridSize)
+        grid           =    collect.(Meshgrid(bz.gridSize)) .- Ref(ones(Int64, length(bz.gridSize)))
+        phaseShift     =    exp.(-im .* dot.(grid, Ref(momentumShift)))
+
+        return  phaseShift
     end
 
 end
