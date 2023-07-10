@@ -1,7 +1,7 @@
 # TightBindingToolkit.UnitCell
 
 ```@autodocs
-Modules = [TightBindingToolkit, TightBindingToolkit.UCell]
+Modules = [TightBindingToolkit, TightBindingToolkit.UCell, TightBindingToolkit.DesignUCell, TightBindingToolkit.ExpandUCell]
 Private = false
-Pages   = ["UnitCell.jl"]
+Pages   = ["UnitCell.jl", "DesignUnitCell.jl", "ExpandUnitCell.jl"]
 ```
