@@ -1,12 +1,13 @@
 module TBModel
 
+    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!
+
+    using ..TightBindingToolkit.Useful: Meshgrid, DistFunction, DeriDistFunction, FFTArrayofMatrix, BinarySearch
     using ..TightBindingToolkit.UCell:UnitCell
-    using ..TightBindingToolkit.BZone:BZ
+    using ..TightBindingToolkit.BZone:BZ, MomentumPhaseFFT
     using ..TightBindingToolkit.Hams:Hamiltonian
 
-    export Model , dist , distDer , findFilling , getMu! , getFilling! , getCount , getGk! , SolveModel!, BinarySearch
-
-    using LinearAlgebra, Statistics
+    using LinearAlgebra, Logging
 
 
     @doc """
@@ -25,7 +26,7 @@ module TBModel
 
     Initialize this structure using 
     ```julia
-    Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=0.0, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1)
+    Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1)
     ```
     You can either input a filling, or a chemical potential. The corresponding μ for a given filling, or filling for a given μ is automatically calculated.
     """
@@ -41,125 +42,100 @@ module TBModel
         Gk      ::  Array{Matrix{ComplexF64}}
         Gr      ::  Array{Matrix{ComplexF64}}
         
-        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=0.0, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, 0.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
+        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, 0.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
         ##### Chosen the default value of filling to be -1 which is unphysical so that the code knows when filling has not been provided and has to be calculated from mu instead!
     end
 
 
-    @doc """
-    ```julia
-    dist(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-    ```
-    Distribution function. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
-
-    """
-    function dist(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-        return @. 1 / (exp((E - mu) / T) - stat)
-    end
+    
 
 
     @doc """
     ```julia
-    distDer(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-    ```
-    derivative of [`dist`](@ref) w.r.t the energy. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
-
-    """
-    function distDer(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-        return @. - (1/T) * exp((E - mu) / T) / ((exp((E - mu) / T) - stat) ^ 2)
-    end
-
-
-    @doc """
-    ```julia
-    findFilling(bands::Vector{Float64}, mu::Float64, T::Float64, stat::Int64=-1) --> Float64
+    FindFilling(bands::Vector{Float64}, mu::Float64, T::Float64, stat::Int64=-1) --> Float64
     ```
     Find filling at given `T`=temperature and `mu`=chemical potential, for a given `bands`.
 
     """
-    function findFilling( mu::Float64, bands::Vector{Float64}, T::Float64, stat::Int64=-1) :: Float64
-        return sum(dist(bands; T=T, mu=mu, stat=stat)) / length(bands)
+    function FindFilling( mu::Float64, bands::Vector{Float64}, T::Float64, stat::Int64=-1) :: Float64
+        return sum(DistFunction(bands; T=T, mu=mu, stat=stat)) / length(bands)
     end
 
-    ##### General function implementing Binary search on a monotonic function f(x, args...)=target, in the range x ∈ xRange, with tolerance tol. 
-    function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; tol::Float64=0.001) where T<:Function
-        xExt = collect(xRange)
-        current = nothing
     
-        steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(tol))))
-        for i in 1:steps
-            current = mean(xExt)
-            check = f(current, args...)
-            if check > target
-                xExt[end] = current
-            elseif check < target
-                xExt[begin] = current
-            else
-                break
-            end
-        end
-    
-        return current
-    end
 
     @doc """
     ```julia
-    getMu!(M::Model; tol::Float64=0.001)
+    GetMu!(M::Model; tol::Float64=0.001)
     ```
     Function to get chemical potential for a given `Model`, within a tolerance.
 
     """
-    function getMu!(M::Model ;  tol::Float64=0.001)
+    function GetMu!(M::Model ;  tol::Float64=0.001)
     
         if M.T≈0.0
             energies  =   sort(reduce(vcat, M.Ham.bands))
             M.mu      =   (energies[floor(Int64, length(energies)*M.filling)] + energies[floor(Int64, length(energies)*M.filling)+1])/2
         else
-            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, findFilling, (M.Ham.bands, M.T, M.stat) ; tol=tol)
-            println("Found chemical potential for given filling.")
+            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (reduce(vcat, M.Ham.bands), M.T, M.stat) ; tol=tol)
+            @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
         end
     end
 
 
     @doc """
     ```julia
-    getFilling!(M::Model)
+    GetFilling!(M::Model)
     ```
     Find filling for a given `Model`.
 
     """
-    function getFilling!(M::Model)
+    function GetFilling!(M::Model)
         if M.T≈0.0
             energies    =   sort(reduce(vcat, M.Ham.bands))
             M.filling   =   searchsortedlast(energies, M.mu) / length(energies)
         else
-            M.filling   =   findFilling( M.mu, reduce(vcat, M.Ham.bands), M.T, M.stat)
+            M.filling   =   FindFilling( M.mu, reduce(vcat, M.Ham.bands), M.T, M.stat)
         end
     end
 
 
     @doc """
     ```julia
-    getCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64) --> Matrix{Float64}
+    GetCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64) --> Matrix{Float64}
     ```
     Function to return a diagonal matrix whose entries are M[i, i] = θ(-(E^i(k)-μ)) ----> 1 if the energy is below the chemical potential, otherwise 0.
 
     """
-    function getCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64) :: Matrix{Float64}
-        return diagm(dist(Es; T=T, mu=mu, stat=stat))
+    function GetCount(Es::Vector{Float64}, mu::Float64, T::Float64, stat::Int64) :: Matrix{Float64}
+        return diagm(DistFunction(Es; T=T, mu=mu, stat=stat))
     end
 
 
     @doc """
     ```julia
-    getGk!(M::Model)
+    GetGk!(M::Model)
     ```
     Finding the equal-time Greens functions in momentum space of a `Model`.
 
     """
-    function getGk!(M::Model)
-        quasiCount 	=	getCount.(M.Ham.bands, Ref(M.mu), Ref(M.T), Ref(M.stat))   ##### Matrix with 1s and 0s along the diagonal. The count of the quasiparticles at each k point determined by the bands and the chemical potential
-        M.Gk      =   transpose.(M.Ham.states .* quasiCount .* adjoint.(M.Ham.states))
+    function GetGk!(M::Model)
+        quasiCount 	=	GetCount.(M.Ham.bands, Ref(M.mu), Ref(M.T), Ref(M.stat))   ##### Matrix with 1s and 0s along the diagonal. The count of the quasiparticles at each k point determined by the bands and the chemical potential
+        M.Gk        =   transpose.(M.Ham.states .* quasiCount .* adjoint.(M.Ham.states))
+    end
+
+
+    @doc """
+    ```julia
+    GetGr!(M::Model)
+    ```
+    Finding the equal-time Greens functions in real space of a `Model`.
+
+    """
+    function GetGr!(M::Model)
+        
+        Gr           =  FFTArrayofMatrix(M.Gk)  
+        phaseShift   =  MomentumPhaseFFT(M.bz, M.uc)
+        M.Gr         =  Gr .* phaseShift   
     end
 
 
@@ -170,20 +146,25 @@ module TBModel
     one-step function to find all the attributes in Model after it has been initialized.
 
     """
-    function SolveModel!(M::Model)
+    function SolveModel!(M::Model ; get_correlations::Bool = true, verbose::Bool = true)
 
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
-            getFilling!(M)
+            GetFilling!(M)
         else
-            getMu!(M)
+            GetMu!(M)
         end
+
         energies  =   sort(reduce(vcat, M.Ham.bands))
         M.gap     =   energies[floor(Int64, length(energies)*M.filling) + 1] - energies[floor(Int64, length(energies)*M.filling)]
     
-        getGk!(M)
-        println("System filled!")
+        if get_correlations
+            GetGk!(M)
+            GetGr!(M)
+        end
+        
+        if verbose
+            @info "System Filled!"
+        end
     end
-
-    #//TODO : Add real space Greens function calculation using FFTW.
 
 end
