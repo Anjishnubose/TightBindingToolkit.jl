@@ -1,20 +1,21 @@
 module Hams
-export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, isBandGapped
+    export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, IsBandGapped
 
     using ..TightBindingToolkit.SpinMatrices:SpinMats
-    using ..TightBindingToolkit.UCell:UnitCell, isSameUnitCell, ModifyFields!, ModifyIsotropicFields!
+    using ..TightBindingToolkit.UCell:Bond, UnitCell, IsSameUnitCell
+    using ..TightBindingToolkit.DesignUCell: ModifyFields!, ModifyIsotropicFields!
     using ..TightBindingToolkit.BZone:BZ
 
-    using LinearAlgebra, TensorCast
+    using LinearAlgebra, TensorCast, Logging
 
     @doc """
     ```julia
-    FillHoppingHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}}) --> Matrix{ComplexF64}
+    FillHoppingHamiltonian(uc::UnitCell, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}}) --> Matrix{ComplexF64}
     ```
-    Returns the hopping Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`.
+    Returns the hopping Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`. `OnSiteMatrices` are used for the fields, with the convention that the last matrix is the one corresponding to the chemimcal potential.
 
     """
-    function FillHoppingHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}})
+    function FillHoppingHamiltonian(uc::UnitCell{2}, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}})
         dims    =   uc.localDim * length(uc.basis)
         H       =   zeros(ComplexF64, dims, dims)
         
@@ -22,7 +23,7 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
         for site in 1:length(uc.basis)
             b1  =   uc.localDim * (site - 1) + 1
             b2  =   uc.localDim * (site - 1) + 1
-            H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .-=   sum(uc.fields[site] .* SpinMatrices) 
+            H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .-=   sum(uc.fields[site] .* OnSiteMatrices) 
         end
         ##### Inter-site terms which depend on the momentum
         for bond in uc.bonds
@@ -43,12 +44,12 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
 
     @doc """
     ```julia
-    FillPairingHamiltonian(uc::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}}) --> Matrix{ComplexF64}
+    FillPairingHamiltonian(uc::UnitCell, k::Vector{Float64}) --> Matrix{ComplexF64}
     ```
     Returns the pairing Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`.
 
     """
-    function FillPairingHamiltonian(uc::UnitCell, k::Vector{Float64}) :: Matrix{ComplexF64}
+    function FillPairingHamiltonian(uc::UnitCell{2}, k::Vector{Float64}) :: Matrix{ComplexF64}
         dims    =   uc.localDim * length(uc.basis)
         H       =   zeros(ComplexF64, dims, dims)
     
@@ -76,27 +77,28 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
     Returns the full Hamiltonian at all momentum points in `BZ`, corresponding to the bonds present in `UnitCell`.
 
     """
-    function FillHamiltonian(uc_hop::UnitCell, uc_pair::UnitCell, k::Vector{Float64} ; SpinMatrices::Vector{Matrix{ComplexF64}}) :: Matrix{ComplexF64}
+    function FillHamiltonian(uc_hop::UnitCell{2}, uc_pair::UnitCell{2}, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}}) :: Matrix{ComplexF64}
 
-        @assert isSameUnitCell(uc_hop, uc_pair) == true "Inconsistent unit cells for hopping and pairing!"
+        @assert IsSameUnitCell(uc_hop, uc_pair) "Inconsistent unit cells for hopping and pairing!"
 
-        Tk      =   FillHoppingHamiltonian( uc_hop,  k ; SpinMatrices = SpinMatrices)
-        Tmk     =   FillHoppingHamiltonian( uc_hop, -k ; SpinMatrices = SpinMatrices)
+        Tk      =   FillHoppingHamiltonian( uc_hop,  k ; OnSiteMatrices = OnSiteMatrices)
+        Tmk     =   FillHoppingHamiltonian( uc_hop, -k ; OnSiteMatrices = OnSiteMatrices)
         Δk      =   FillPairingHamiltonian(uc_pair,  k ) - transpose(FillPairingHamiltonian(uc_pair, -k ))
+
         ##### The full BdG Hamiltonian in the nambu basis.
         Hk      =   hcat(Tk , Δk)
         Hk      =   vcat(Hk , hcat(Δk' , -transpose(Tmk)))
         return (1/2 .* Hk)
     end
 
-    function FillHamiltonian(uc::UnitCell, bz::BZ)
-        SpinMatrices    =   SpinMats((uc.localDim-1)//2)
-        return FillHoppingHamiltonian.(Ref(uc), bz.ks ; SpinMatrices = SpinMatrices)
+    function FillHamiltonian(uc::UnitCell{2}, bz::BZ ; OnSiteMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2))
+        
+        return FillHoppingHamiltonian.(Ref(uc), bz.ks ; OnSiteMatrices = OnSiteMatrices)
     end
     
-    function FillHamiltonian(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ)
-        SpinMatrices    =   SpinMats((uc_hop.localDim-1)//2)
-        return FillHamiltonian.(Ref(uc_hop), Ref(uc_pair), bz.ks ; SpinMatrices = SpinMatrices)
+    function FillHamiltonian(uc_hop::UnitCell{2}, uc_pair::UnitCell{2}, bz::BZ ; OnSiteMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2))
+
+        return FillHamiltonian.(Ref(uc_hop), Ref(uc_pair), bz.ks ; OnSiteMatrices = OnSiteMatrices)
     end
 
 
@@ -123,8 +125,9 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
         bandwidth   ::  Tuple{Float64, Float64}
         is_BdG      ::  Bool
     
-        Hamiltonian(uc::UnitCell, bz::BZ) = new{}(FillHamiltonian(uc, bz), Array{Vector{Float64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), (0.0, 0.0), false)
-        Hamiltonian(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ) = new{}(FillHamiltonian(uc_hop, uc_pair, bz), Array{Vector{Float64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef,zeros(Int64, length(uc_hop.primitives))...), (0.0, 0.0), true)
+        Hamiltonian(uc::UnitCell{2}, bz::BZ ; OnSiteMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2)) = new{}(FillHamiltonian(uc, bz ; OnSiteMatrices = OnSiteMatrices), Array{Vector{Float64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), (0.0, 0.0), false)
+
+        Hamiltonian(uc_hop::UnitCell{2}, uc_pair::UnitCell{2}, bz::BZ ; OnSiteMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc_hop.localDim-1)//2)) = new{}(FillHamiltonian(uc_hop, uc_pair, bz ; OnSiteMatrices = OnSiteMatrices), Array{Vector{Float64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef,zeros(Int64, length(uc_hop.primitives))...), (0.0, 0.0), true)
     end
 
 
@@ -141,7 +144,7 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
         Ham.states      =   getfield.(sols, :vectors)
         Ham.bandwidth   =   (minimum(first.(Ham.bands)) , maximum(last.(Ham.bands)))
         if verbose
-            println("Hamiltonian Diagonalized")
+            @info "Hamiltonian Diagonalized!"
         end
     end
 
@@ -153,15 +156,15 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
     `dim` is an optional argument which determines which element of on-site field is being replaced.
 
     """
-    function ModifyHamiltonianField!(Ham::Hamiltonian, uc::UnitCell, newFields::Vector{Float64} ; dim::Int64=4, verbose::Bool=false)
+    function ModifyHamiltonianField!(Ham::Hamiltonian, uc::UnitCell, newFields::Vector{Float64} ; dim::Int64=length(uc.fields[begin]), OnSiteMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2) , verbose::Bool=false)
+
         @assert length(newFields)==length(uc.basis) "Inconsistent number of basis sites and fields given"
-        SpinVec     =   SpinMats((uc.localDim-1)//2)
     
         if Ham.is_BdG==false 
-            Ham.H   .+=   Ref(kron(diagm(getindex.(uc.fields, dim) .- newFields) , SpinVec[dim]))
+            Ham.H   .+=   Ref(kron(diagm(getindex.(uc.fields, dim) .- newFields) , OnSiteMatrices[dim]))
             DiagonalizeHamiltonian!(Ham ; verbose=verbose)
         else
-            Ham.H   .+=   Ref(kron(SpinMats(1//2)[3], kron(diagm(getindex.(uc.fields, dim) .- newFields) , SpinVec[dim])))  ##### The extra Sz corresponds to the nambu basis.
+            Ham.H   .+=   Ref(kron(SpinMats(1//2)[3], kron(diagm(getindex.(uc.fields, dim) .- newFields) , OnSiteMatrices[dim])))  ##### The extra Sz corresponds to the nambu basis.
             DiagonalizeHamiltonian!(Ham ; verbose=verbose)
         end
     
@@ -176,7 +179,7 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
     Returns a matrix of booleans marked as `true` if the band corresponding to the row and column of the matrix are gapped (greater than the tolerance), and false otherwise. 
 
     """
-    function isBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) :: BitMatrix
+    function IsBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) :: BitMatrix
         bands   =   reshape(H.bands, length(H.bands))
         @cast bandDiff[i, j][k] |= abs(bands[k][i] - bands[k][j])
         @cast gapped[i, j] |= minimum(bandDiff[i, j]) > tol
