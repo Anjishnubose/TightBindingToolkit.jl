@@ -1,7 +1,7 @@
 module Chern
     export FindLinks , FieldStrength , ChernNumber, CheckValidity
 
-    using ..TightBindingToolkit.Hams:Hamiltonian, isBandGapped
+    using ..TightBindingToolkit.Hams:Hamiltonian, IsBandGapped
 
     using LinearAlgebra
 
@@ -51,7 +51,7 @@ module Chern
 
 
     function CheckValidity(Ham::Hamiltonian, subset::Vector{Int64})
-        bandGapped  =   isBandGapped(Ham)
+        bandGapped  =   IsBandGapped(Ham)
         bandGapped[begin, begin]    =   true
         bandGapped[end, end]        =   true
 

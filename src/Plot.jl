@@ -1,10 +1,11 @@
 module PlotTB
-    export plot_UnitCell! ,plot_band_contour!, plot_band_structure!, plot_FS!
+    export Plot_UnitCell! ,Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!
 
     using LinearAlgebra, LaTeXStrings, Plots
 
-    using ..TightBindingToolkit.UCell:UnitCell, getAllOffsets
-    using ..TightBindingToolkit.BZone:BZ, GetQIndex, getBZPath, CombinedBZPath, ReduceQ
+    using ..TightBindingToolkit.Useful: GetAllOffsets
+    using ..TightBindingToolkit.UCell:UnitCell
+    using ..TightBindingToolkit.BZone:BZ, GetQIndex, GetBZPath, CombinedBZPath, ReduceQ
     using ..TightBindingToolkit.Hams:Hamiltonian
     using ..TightBindingToolkit.TBModel:Model
     using ..TightBindingToolkit.BdG:BdGModel
@@ -20,11 +21,11 @@ module PlotTB
     `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
 
     """
-    function plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=true)
+    function Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=true)
         
         dim         =   length(uc.primitives)
         @assert dim == 2 "Unit Cell plotting only works for 2d right now!"
-        offsets     =   getAllOffsets(range, dim)
+        offsets     =   GetAllOffsets(range, dim)
 
         p       =   plot(aspect_ratio=:equal, grid=false)
         ##### Plotting sites
@@ -91,7 +92,7 @@ module PlotTB
     Function to draw equal energy contours of the bands in `Hamiltonian`, specifically for the band with the given `band_index`.
 
     """
-    function plot_band_contour!(Ham::Hamiltonian , bz::BZ , band_index::Int64 ; cmp::Symbol = :turbo)
+    function Plot_Band_Contour!(Ham::Hamiltonian , bz::BZ , band_index::Int64 ; cmp::Symbol = :turbo)
         pyplot()
         @assert band_index <= length(Ham.bands[begin]) "Given band does not exist in the given Hamiltonian!"
         @assert length(size(Ham.bands)) == 2 "Contour plots only work for 2d Hamiltonians"
@@ -116,7 +117,7 @@ module PlotTB
     `labels` are the Plot labels of the critical points.
 
     """
-    function plot_band_structure!(M::T, path::Vector{Vector{Float64}},  band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) where {T<:Union{Model, BdGModel}}
+    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}},  band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) where {T<:Union{Model, BdGModel}}
         
         bzpath     = CombinedBZPath(M.bz, path ; nearest=nearest, closed = closed)
         path_index = GetQIndex.(bzpath, Ref(M.bz))
@@ -157,10 +158,10 @@ module PlotTB
     Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on the given `BZ`. 
 
     """
-    function plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64} ; cmp::Symbol = :turbo)
+    function Plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64} ; cmp::Symbol = :turbo)
         pyplot()
         @assert length(size(Ham.bands)) == 2 "Fermi surface plots only work for 2d Hamiltonians"
-        offsets     =   getAllOffsets(1, 2)
+        offsets     =   GetAllOffsets(1, 2)
 
         plt = Plots.plot(aspect_ratio=:equal)
 
