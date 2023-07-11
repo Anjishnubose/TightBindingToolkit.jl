@@ -223,7 +223,7 @@ module DesignUCell
 			if identifier in keys(lookupTable)
 				lookupTable[identifier] 	=	lookupTable[identifier] + bond.mat
 			elseif (bond.target, bond.base, -bond.offset) in keys(lookupTable)
-				lookupTable[identifier] 	=	lookupTable[identifier] + adjoint(bond.mat)
+				lookupTable[(bond.target, bond.base, -bond.offset)] 	=	lookupTable[(bond.target, bond.base, -bond.offset)] + adjoint(bond.mat)
 			else
 				lookupTable[identifier] 	=	bond.mat
 			end
