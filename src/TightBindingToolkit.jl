@@ -14,7 +14,7 @@ export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFu
 ##### Module for defining Unit Cell structure and some funcitons to manipulate it.
 include("UnitCell.jl")
 using .UCell
-export Bond , BondRank, IsSameBond , UnitCell , IsSameUnitCell , AddBasisSite! , GetDistance , GetRealSpacePositions, IsSameUnitCell
+export Bond , BondRank, IsSameBond , FlipBond , UnitCell , IsSameUnitCell , AddBasisSite! , GetDistance , GetRealSpacePositions, IsSameUnitCell
 
 include("DesignUnitCell.jl")
 using .DesignUCell
@@ -22,7 +22,7 @@ export AddAnisotropicBond! , AddIsotropicBonds! , ModifyBonds! , ScaleBonds! , R
 
 include("ExpandUnitCell.jl")
 using .ExpandUCell
-export ChangePrimitives, ExpandUnitCell, ExpandBonds!
+export ChangePrimitives!, ExpandUnitCell, ExpandBonds!
 
 ##### Module to define Param structure which represents a general hopping parameter, and can be used to construct a UnitCell.
 include("Params.jl")

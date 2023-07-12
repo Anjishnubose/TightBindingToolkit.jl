@@ -1,5 +1,5 @@
 module UCell
-	export Bond , BondRank, IsSameBond , UnitCell , IsSameUnitCell , AddBasisSite! , GetDistance , GetRealSpacePositions, IsSameUnitCell
+	export Bond , BondRank, IsSameBond , FlipBond , UnitCell , IsSameUnitCell , AddBasisSite! , GetDistance , GetRealSpacePositions, IsSameUnitCell
 
 	using LinearAlgebra, Logging
 	using ..TightBindingToolkit.Useful: GetAllOffsets
@@ -27,6 +27,11 @@ module UCell
 
 
 	@doc """
+	```julia
+	BondRank(bond::Bond{T}) --> T
+	BondRank(bonds::Array{Bond{T}}) --> T
+	```
+
 	Function to return rank of a bond or a collection of bonds.
 	
 	"""
@@ -40,10 +45,27 @@ module UCell
 
 
 	@doc """
+	```julia
+	IsSameBond( Bond1::Bond , Bond2::Bond ) --> Bool
+	```
+
 	Function to check if two bond objects are describing the same physical bond, just inverted! 
 	"""
 	function IsSameBond( Bond1::Bond , Bond2::Bond ) :: Bool
 		return Bond1.base==Bond2.target && Bond1.target == Bond2.base && Bond1.offset == -Bond2.offset && Bond1.label==Bond2.label && BondRank(Bond1) == BondRank(Bond2)
+	end
+
+
+	@doc """
+	```julia
+	FlipBond(bond::Bond{2}) --> Bond{2}
+	```
+
+	Function to flip a bond. Only works on bonds of rank = 2 right now.
+	"""
+	function FlipBond(bond::Bond{2}) :: Bond{2}
+
+		return Bond(bond.target, bond.base, -bond.offset, collect(adjoint(bond.mat)), bond.dist, bond.label)
 	end
 
 

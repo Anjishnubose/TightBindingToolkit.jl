@@ -223,7 +223,8 @@ module DesignUCell
 			if identifier in keys(lookupTable)
 				lookupTable[identifier] 	=	lookupTable[identifier] + bond.mat
 			elseif (bond.target, bond.base, -bond.offset) in keys(lookupTable)
-				lookupTable[(bond.target, bond.base, -bond.offset)] 	=	lookupTable[(bond.target, bond.base, -bond.offset)] + adjoint(bond.mat)
+				##### TODO: Fix for arrays, when bond rank >2
+				lookupTable[(bond.target, bond.base, -bond.offset)] 	=	lookupTable[(bond.target, bond.base, -bond.offset)] + collect(adjoint(bond.mat))
 			else
 				lookupTable[identifier] 	=	bond.mat
 			end

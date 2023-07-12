@@ -1,10 +1,10 @@
 module ExpandUCell
-    export ChangePrimitives, ExpandUnitCell, ExpandBonds!
+    export ChangePrimitives!, ExpandUnitCell, ExpandBonds!
 
     using LinearAlgebra
 
     using ..TightBindingToolkit.Useful: Meshgrid
-    using ..TightBindingToolkit.UCell: UnitCell, GetRealSpacePositions, AddBasisSite!
+    using ..TightBindingToolkit.UCell: Bond, UnitCell, GetRealSpacePositions, AddBasisSite!, IsSameBond, FlipBond
     using ..TightBindingToolkit.DesignUCell: AddAnisotropicBond!
 
 
@@ -15,20 +15,54 @@ module ExpandUCell
 	Changes the pirmitive vectors of the given `UnitCell` assuming the sublattices stay the same. Changes the bonds accordingly.
 
 	"""
-    function ChangePrimitives!(uc::UnitCell{T}, newPrimitives::Vector{Vector{Float64}}) where {T}
+    function ChangePrimitives!(uc::UnitCell{T}, newPrimitives::Vector{Vector{Float64}} ; OffsetRange::Int64 = 2, accuracy::Int64 = 6) where {T}
 
-        oldPrimitives 	=	uc.primitives
-        uc.primtiives 	=	newPrimitives
-        DistanceDict 	=	GetRealSpacePositions(uc)
+        oldPrimitives 	=	deepcopy(uc.primitives)
+        uc.primitives 	=	newPrimitives
+
+        DistanceDict 	=	GetRealSpacePositions(uc ; OffsetRange = OffsetRange, accuracy = accuracy)
     
         newBonds 		=	Bond{T}[]
-        for bond in uc.bonds
-            position 	=	uc.basis[bond.target] + sum(bond.offset .* oldPrimitives)
-            target, offset 	=	DistanceDict[position]
-    
-            push!(newBonds, Bond(bond.base, target, offset, bond.mat, bond.dist, bond.label))
+
+        for (sub, basis) in enumerate(uc.basis)
+
+            bases 		=	getproperty.(uc.bonds, :base)
+            bonds 	    =	uc.bonds[findall(==(sub), bases)]
+
+            for bond in bonds
+                position 	    =	uc.basis[bond.target] + sum(bond.offset .* oldPrimitives)
+                target, offset 	=	DistanceDict[round.(position, digits = accuracy)]
+
+                proposal        =   Bond(bond.base, target, offset, bond.mat, bond.dist, bond.label)
+                if isempty(newBonds)
+                    push!( newBonds , proposal )
+                else
+                    if sum(IsSameBond.( Ref(proposal) , newBonds ))==0
+                        push!( newBonds , proposal )
+                    end
+                end
+            end
+
+            targets 		=	getproperty.(uc.bonds, :target)
+            bonds 	        =	FlipBond.(uc.bonds[findall(==(sub), targets)])
+
+            for bond in bonds
+                position 	    =	uc.basis[bond.target] + sum(bond.offset .* oldPrimitives)
+                target, offset 	=	DistanceDict[round.(position, digits = accuracy)]
+
+                proposal    =   Bond(bond.base, target, offset, bond.mat, bond.dist, bond.label)
+                if isempty(newBonds)
+                    push!( newBonds , proposal )
+                else
+                    if sum(IsSameBond.( Ref(proposal) , newBonds ))==0
+                        push!( newBonds , proposal )
+                    end
+                end
+            end
+
+
         end
-    
+        @assert length(newBonds) == length(uc.bonds)
         uc.bonds 		=	newBonds
     end
 
