@@ -70,13 +70,13 @@ module TBModel
     Function to get chemical potential for a given `Model`, within a tolerance.
 
     """
-    function GetMu!(M::Model ;  tol::Float64=0.001)
+    function GetMu!(M::Model ;  mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
     
         if M.T≈0.0
             energies  =   sort(reduce(vcat, M.Ham.bands))
             M.mu      =   (energies[floor(Int64, length(energies)*M.filling)] + energies[floor(Int64, length(energies)*M.filling)+1])/2
         else
-            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (reduce(vcat, M.Ham.bands), M.T, M.stat) ; tol=tol)
+            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (reduce(vcat, M.Ham.bands), M.T, M.stat) ; x_tol=mu_tol, target_tol = filling_tol)
             @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
         end
     end
@@ -146,12 +146,13 @@ module TBModel
     one-step function to find all the attributes in Model after it has been initialized.
 
     """
-    function SolveModel!(M::Model ; get_correlations::Bool = true, verbose::Bool = true)
+    function SolveModel!(M::Model ; get_correlations::Bool = true, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
+        @assert M.Ham.is_BdG==false "BdG Hamiltonians should be solved using a BdGModel"
 
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
             GetFilling!(M)
         else
-            GetMu!(M)
+            GetMu!(M ; mu_tol = mu_tol, filling_tol = filling_tol)
         end
 
         energies  =   sort(reduce(vcat, M.Ham.bands))

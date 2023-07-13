@@ -57,17 +57,17 @@ module Useful
     General function implementing Binary search on a monotonic function f(x, args...)=target, in the range x ∈ xRange, with tolerance tol. 
 
     """
-    function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; tol::Float64=0.001) where T<:Function
+    function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; x_tol::Float64 = 0.001, target_tol::Float64 = 1e-6) where T<:Function
         xExt = collect(xRange)
         current = nothing
     
-        steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(tol))))
+        steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(x_tol)))) 
         for i in 1:steps
             current = mean(xExt)
             check = f(current, args...)
-            if check > target
+            if check - target > target_tol
                 xExt[end] = current
-            elseif check < target
+            elseif check - target < -target_tol
                 xExt[begin] = current
             else
                 break

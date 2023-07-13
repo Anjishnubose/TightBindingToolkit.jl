@@ -58,14 +58,19 @@ module UCell
 
 	@doc """
 	```julia
-	FlipBond(bond::Bond{2}) --> Bond{2}
+	FlipBond(bond::Bond{T}) --> Bond{T}
 	```
 
 	Function to flip a bond. Only works on bonds of rank = 2 right now.
 	"""
-	function FlipBond(bond::Bond{2}) :: Bond{2}
+	function FlipBond(bond::Bond{T}) :: Bond{T} where {T} 
 
-		return Bond(bond.target, bond.base, -bond.offset, collect(adjoint(bond.mat)), bond.dist, bond.label)
+		if T==2
+			return Bond(bond.target, bond.base, -bond.offset, collect(adjoint(bond.mat)), bond.dist, bond.label)
+		else
+			flippedIndices 	=	collect(T:-1:1)
+			return Bond(bond.target, bond.base, -bond.offset, collect(conj.(permutedims(bond.mat, flippedIndices))), bond.dist, bond.label)
+		end
 	end
 
 

@@ -102,8 +102,8 @@ module BdG
     ```
     Function to get the correct chemical potential given a filling.
     """
-    function GetMu!(M::BdGModel ;  tol::Float64=0.001)
-        M.mu    =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M,) ; tol=tol)
+    function GetMu!(M::BdGModel ;  mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
+        M.mu    =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M,) ; x_tol = mu_tol, target_tol = filling_tol)
         @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
     
     end
@@ -162,13 +162,13 @@ module BdG
     ```
     one-step function to find all the attributes in  BdGModel after it has been initialized.
     """
-    function SolveModel!(M::BdGModel ; get_correlations::Bool = true, verbose::Bool = true)
+    function SolveModel!(M::BdGModel ; get_correlations::Bool = true, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==true "Use other format for pure hopping Hamiltonian"
 
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
             GetFilling!(M)
         else
-            GetMu!(M)
+            GetMu!(M ; mu_tol = mu_tol, filling_tol = filling_tol)
         end
 
         energies    =   sort(reduce(vcat, M.Ham.bands))
