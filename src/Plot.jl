@@ -117,10 +117,10 @@ module PlotTB
     `labels` are the Plot labels of the critical points.
 
     """
-    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}},  band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) where {T<:Union{Model, BdGModel}}
+    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}}, band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) where {T<:Union{Model, BdGModel}}
         
-        bzpath     = CombinedBZPath(M.bz, path ; nearest=nearest, closed = closed)
-        path_index = GetQIndex.(bzpath, Ref(M.bz))
+        bzpath     = CombinedBZPath(M.bz, path ; nearest = nearest, closed = closed)
+        path_index = GetQIndex.(bzpath, Ref(M.bz) ; nearest = nearest)
 
         bands_from_index = getindex.(Ref(M.Ham.bands), CartesianIndex.(Tuple.(path_index)))
 
