@@ -124,6 +124,8 @@ module UCell
 
 	"""
 	function AddBasisSite!( uc::UnitCell , position::Vector{Float64} )
+		@assert !(position in uc.basis) "Cannot add the same basis site again!"
+
 		push!( uc.basis , position )
 		d 	=	(uc.localDim^2)
 		@warn "No On-Site field passed to basis site. Choosing default value of $(zeros(Float64, d)) given the local Hilbert space of UnitCell."
@@ -131,6 +133,7 @@ module UCell
 	end
 
 	function AddBasisSite!( uc::UnitCell , position::Vector{Float64} , field::Vector{Float64} )
+		@assert !(position in uc.basis) "Cannot add the same basis site again!"
 		push!( uc.basis , position )
 		push!( uc.fields , field )
 	end
