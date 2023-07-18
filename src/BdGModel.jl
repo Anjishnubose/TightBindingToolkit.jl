@@ -184,7 +184,13 @@ module BdG
         end
     end
 
+    @doc """
+    ```julia
+    FreeEnergy(M::BdGModel; F0::Float64 = 0.0) --> Float64
+    ```
+    Calculate the free energy of the given `BdGModel`.
 
+    """
     function FreeEnergy(M::BdGModel ; F0::Float64 = 0.0) :: Float64
 
         Es      =   reduce(vcat, M.Ham.bands)
