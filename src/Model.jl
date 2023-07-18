@@ -1,6 +1,6 @@
 module TBModel
 
-    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!
+    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, FreeEnergy
 
     using ..TightBindingToolkit.Useful: Meshgrid, DistFunction, DeriDistFunction, FFTArrayofMatrix, BinarySearch
     using ..TightBindingToolkit.UCell:UnitCell
@@ -166,6 +166,16 @@ module TBModel
         if verbose
             @info "System Filled!"
         end
+    end
+
+
+    function FreeEnergy(M::Model; F0::Float64 = 0.0) :: Float64
+
+        Es      =   reduce(vcat, M.Ham.bands)
+        F       =   log.(1 .+ exp.(-(Es .- M.mu) / (M.T)))
+        F       =   -M.T * (sum(F) / length(F))
+
+        return F - F0
     end
 
 end

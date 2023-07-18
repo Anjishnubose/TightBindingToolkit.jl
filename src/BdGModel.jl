@@ -1,5 +1,5 @@
 module BdG
-    export BdGModel, FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!
+    export BdGModel, FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, FreeEnergy
 
     using ..TightBindingToolkit.Useful: DistFunction, DeriDistFunction, BinarySearch, FFTArrayofMatrix
     using ..TightBindingToolkit.UCell: UnitCell
@@ -9,7 +9,7 @@ module BdG
     
     using LinearAlgebra, Tullio, TensorCast, Logging
 
-    import ..TightBindingToolkit.TBModel:FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!
+    import ..TightBindingToolkit.TBModel:FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, FreeEnergy
 
     @doc """
         `BdGModel` is a data type representing a general Tight Binding system with pairing.
@@ -182,6 +182,16 @@ module BdG
         if verbose
             @info "System Filled!"
         end
+    end
+
+
+    function FreeEnergy(M::BdGModel ; F0::Float64 = 0.0) :: Float64
+
+        Es      =   reduce(vcat, M.Ham.bands)
+        F       =   log.(1 .+ exp.(-(Es .- M.mu) / (M.T)))
+        F       =   -M.T * (sum(F) / length(F))
+
+        return F - F0
     end
 
 
