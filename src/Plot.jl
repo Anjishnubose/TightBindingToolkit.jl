@@ -21,7 +21,7 @@ module PlotTB
     `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
 
     """
-    function Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=true)
+    function Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=false, plot_labels::Vector{String} = unique(getproperty.(uc.bonds, :label)), plot_arrows::Bool = true, bond_opacity::Float64 = 0.6)
         
         dim         =   length(uc.primitives)
         @assert dim == 2 "Unit Cell plotting only works for 2d right now!"
@@ -33,17 +33,21 @@ module PlotTB
             shift   =   sum(offset .* uc.primitives)
             sites   =   uc.basis .+ Ref(shift)
             ##### Lattice sites
-            scatter!(Tuple.(sites), label = "", markercolor=:orange, markersize=16)
+            if offset == zeros(Int64, dim)
+                scatter!(Tuple.(sites), label = "", markercolor=:darkorange1, markersize=16, markerstrokecolor = :darkred, markerstrokewidth = 5) ##### Differentiationg the unit cell
+            else
+                scatter!(Tuple.(sites), label = "", markercolor=:darkorange1, markersize=16)
+            end
 
             if offset == zeros(Int64, dim)
                 for (i, site) in enumerate(sites)
-                    annotate!(site..., Plots.text(L"\mathbf{%$i}", :bottom, :left, 16, :black))
+                    annotate!(site..., Plots.text(L"\mathbf{%$i}", :center, 16, :beige)) ##### Sublattice labels
                 end
                 ##### Lattice primitive vectors
                 for primitive in uc.primitives
                     base    =   uc.basis[begin]
                     target  =   uc.basis[begin] .+ primitive
-                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=:green , linewidth=6 , label = "", linealpha=0.75)
+                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=:seagreen , linewidth=6 , label = "", linealpha=0.75)
                 end
 
             end
@@ -65,14 +69,14 @@ module PlotTB
             index   =   findfirst(==(bond.label), labels)
             counts[index]   +=  1
 
-            if counts[index] == 1
-                plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=0.75)
-            else
-                plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.75)
+            if counts[index] == 1 && bond.label in plot_labels
+                plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=bond_opacity)
+            elseif counts[index] > 1 && bond.label in plot_labels
+                plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
             end
             ##### Plotting the conjugate of each bond
-            if plot_conjugate
-                plot!([target_conj[begin] , base[begin]] , [target_conj[end], base[end]] , arrow=true , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.75)
+            if plot_conjugate && bond.label in plot_labels
+                plot!([target_conj[begin] , base[begin]] , [target_conj[end], base[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.5)
             end
         end
 
@@ -117,16 +121,17 @@ module PlotTB
     `labels` are the Plot labels of the critical points.
 
     """
-    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}}, band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) where {T<:Union{Model, BdGModel}}
+    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}}, band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true, plot_legend::Bool = true) where {T<:Union{Model, BdGModel}}
         
+        ##### the k-points taken along the path joining the given points
         bzpath     = CombinedBZPath(M.bz, path ; nearest = nearest, closed = closed)
         path_index = GetQIndex.(bzpath, Ref(M.bz) ; nearest = nearest)
-
+        ##### only plotting the given bands
         bands_from_index = getindex.(Ref(M.Ham.bands), CartesianIndex.(Tuple.(path_index)))
 
         label_indices    = getindex.(findmin.([norm.(Ref(ReduceQ(x,M.bz)).-bzpath) for x in path]) , 2)
 
-        plt = plot(grid=false)
+        plt = plot(grid=false, legend = plot_legend, bg_legend = :transparent)
         for j in band_index
             plot!(getindex.(bands_from_index , j), labels=L"Band : %$j", lw = 2.0)
         end
