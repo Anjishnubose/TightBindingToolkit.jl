@@ -38,11 +38,17 @@ module BdG
         uc_pair ::  UnitCell
         bz      ::  BZ
         Ham     ::  Hamiltonian
+        """
+        Thermodynamic properties
+        """
         T       ::  Float64         ##### Temperature
         filling ::  Float64         ##### Filling fraction
         mu      ::  Float64         ##### Chemical potential
         gap     ::  Float64
         stat    ::  Int64           ##### +1 for Boson, -1 for Fermions
+        """
+        Correlations
+        """
         Gk      ::  Array{Matrix{ComplexF64}}
         Fk      ::  Array{Matrix{ComplexF64}}
         Gr      ::  Array{Matrix{ComplexF64}}

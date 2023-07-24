@@ -34,11 +34,17 @@ module TBModel
         uc      ::  UnitCell
         bz      ::  BZ
         Ham     ::  Hamiltonian
+        """
+        Thermodynamic properties
+        """
         T       ::  Float64         ##### Temperature
         filling ::  Float64         ##### Filling fraction
         mu      ::  Float64         ##### Chemical potential
         stat    ::  Int64           ##### +1 for bosons, -1 for fermions
         gap     ::  Float64
+        """
+        Correlations
+        """
         Gk      ::  Array{Matrix{ComplexF64}}
         Gr      ::  Array{Matrix{ComplexF64}}
         
