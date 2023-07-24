@@ -29,6 +29,15 @@ include("Params.jl")
 using .Parameters
 export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams
 
+##### Module to make a lattice in real-space using a UnitCell.
+include("Lattice.jl")
+using .LatticeStruct
+export Lattice, FillSites!, FillBonds!, FillLattice!, GetBCPhase, ApplyBCToSite
+
+include("DesignLattice.jl")
+using .DesignLattice
+export CreateLattice, ModifyLattice!, ScaleLatticeBonds!, ScaleLattice!, RemoveLatticeBonds!
+
 ##### Module to define Brillouin Zone structure and some functions to manipulate it.
 include("BZ.jl")
 using .BZone
