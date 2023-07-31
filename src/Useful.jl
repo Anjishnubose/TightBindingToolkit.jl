@@ -60,8 +60,13 @@ General function implementing Binary search on a monotonic function f(x, args...
     function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; x_tol::Float64 = 0.001, target_tol::Float64 = 1e-6) where T<:Function
         xExt = collect(xRange)
         current = nothing
-    
-        steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(x_tol)))) 
+        
+        if xExt[end]!= xExt[begin]
+            steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(x_tol)))) 
+        else
+            steps       =   1
+        end
+        
         for i in 1:steps
             current = mean(xExt)
             check = f(current, args...)
