@@ -13,16 +13,23 @@ module PlotTB
     using ..TightBindingToolkit.BdG:BdGModel
 
 
-    @doc """
-    ```julia
-    plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=true) --> Plots.plot()
-    ```
-    Function to plot the `UnitCell`. 
-    `range` determines the range of UnitCells plotted in real-space. default is ±1.
-    `cmp` determines the colorScheme of chosen to differentiate b.w different hopping types.
-    `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
+@doc """
+```julia
+Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, bond_cmp::Symbol = :matter, sub_cmp::Symbol = :rainbow, plot_conjugate::Bool=false, plot_labels::Vector{String} = unique(getproperty.(uc.bonds, :label)), plot_arrows::Bool = true, bond_opacity::Float64 = 0.6, site_size::Float64 = 16.0, bond_thickness::Tuple{Float64, Float64} = (4.0, 2.0), bond_rev::Bool=false, plot_lattice::Bool=false)
+```
+Function to plot the `UnitCell`. 
+- `range` determines the range of UnitCells plotted in real-space. default is ±1.
+- `bond_cmp` determines the colorScheme chosen to differentiate b.w different hopping types.
+- `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
+- `sub_cmp` is the choden colorScheme for the different sublattices.
+- `plot_labels` is the vector of bond labels to be plotted.
+- `plot_arrows` : whether to plot arrows on bonds.
+- `bond_opacity` : alpha value of bonds being plotted.
+- `bond_thickness` : linewidth of bonds being plotted.
+- `site_size`: size of sublattice points.
+- `plot_lattice`: plot bonds on all sites or only on one unit cell.
 
-    """
+"""
     function Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, bond_cmp::Symbol = :matter, sub_cmp::Symbol = :rainbow, plot_conjugate::Bool=false, plot_labels::Vector{String} = unique(getproperty.(uc.bonds, :label)), plot_arrows::Bool = true, bond_opacity::Float64 = 0.6, site_size::Float64 = 16.0, bond_thickness::Tuple{Float64, Float64} = (4.0, 2.0), bond_rev::Bool=false, plot_lattice::Bool=false)
         
         dim         =   length(uc.primitives)
@@ -121,16 +128,22 @@ module PlotTB
     end
 
 
-    @doc """
-    ```julia
-    Plot_Fields!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=true) --> Plots.plot()
-    ```
-    Function to plot the `UnitCell`. 
-    `range` determines the range of UnitCells plotted in real-space. default is ±1.
-    `cmp` determines the colorScheme of chosen to differentiate b.w different hopping types.
-    `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
+@doc """
+```julia
+Plot_Fields!(uc::UnitCell ; OnSiteMatrices::Vector{Matrix{ComplexF64}}=SpinMats((uc.localDim - 1)//2), scale::Float64 = 1.0, range::Int64 = 1, cmp::Symbol = :thermal, field_thickness::Float64 = 1.0, field_opacity::Float64 = 0.6, use_lookup::Bool = false, site_size::Float64 = 12.0)
+```
+Function to plot the Fields of the UnitCell.
+``
+- `range` determines the range of UnitCells plotted in real-space. default is ±1.
+- `cmp` determines the colorScheme of chosen to differentiate b.w different fields.
+- `field_thickness` linewidth of the fields being plotted.
+- `field_opacity` : alpha value of the fields being plotted.
+- `use_lookup` : if you have implemented on-site terms using Bonds and not fields. 
+- `OnSiteMatrices` : the matrices w.r.t which the lookup table on each site will be decomposed to get a vector field on each site.
+- `site_size` : size of sublattice points being plotted.
 
-    """
+
+"""
     function Plot_Fields!(uc::UnitCell ; OnSiteMatrices::Vector{Matrix{ComplexF64}}=SpinMats((uc.localDim - 1)//2), scale::Float64 = 1.0, range::Int64 = 1, cmp::Symbol = :thermal, field_thickness::Float64 = 1.0, field_opacity::Float64 = 0.6, use_lookup::Bool = false, site_size::Float64 = 12.0)
         
         dim         =   length(uc.primitives)
@@ -193,13 +206,13 @@ module PlotTB
     end
 
 
-    @doc """
-    ```julia
-    plot_band_contour!(Ham::Hamiltonian , bz::BZ , band_index::Int64) --> Plots.plot()
-    ```
-    Function to draw equal energy contours of the bands in `Hamiltonian`, specifically for the band with the given `band_index`.
+@doc """
+```julia
+plot_band_contour!(Ham::Hamiltonian , bz::BZ , band_index::Int64) --> Plots.plot()
+```
+Function to draw equal energy contours of the bands in `Hamiltonian`, specifically for the band with the given `band_index`.
 
-    """
+"""
     function Plot_Band_Contour!(Ham::Hamiltonian , bz::BZ , band_index::Int64 ; cmp::Symbol = :turbo)
         pyplot()
         @assert band_index <= length(Ham.bands[begin]) "Given band does not exist in the given Hamiltonian!"
@@ -216,15 +229,15 @@ module PlotTB
     end 
 
 
-    @doc """
-    ```julia
-    plot_band_structure!(M<:Union{Model, BdGModel}, path::Vector{Vector{Float64}},  band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) --> Plots.plot()
-    ```
-    Function to plot band structures of the `Model` along a `path` in the BZ determined by the given critical points.
-    Can take in multiple bands into account ∈ `band_index`.
-    `labels` are the Plot labels of the critical points.
+@doc """
+```julia
+plot_band_structure!(M<:Union{Model, BdGModel}, path::Vector{Vector{Float64}},  band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true) --> Plots.plot()
+```
+Function to plot band structures of the `Model` along a `path` in the BZ determined by the given critical points.
+Can take in multiple bands into account ∈ `band_index`.
+`labels` are the Plot labels of the critical points.
 
-    """
+"""
     function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}}, band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true, plot_legend::Bool = true) where {T<:Union{Model, BdGModel}}
         
         ##### the k-points taken along the path joining the given points
@@ -260,13 +273,13 @@ module PlotTB
     end
 
 
-    @doc """
-    ```julia
-    plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64})--> Plots.plot()
-    ```
-    Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on the given `BZ`. 
+@doc """
+```julia
+plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64})--> Plots.plot()
+```
+Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on the given `BZ`. 
 
-    """
+"""
     function Plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64} ; cmp::Symbol = :turbo)
         pyplot()
         @assert length(size(Ham.bands)) == 2 "Fermi surface plots only work for 2d Hamiltonians"
