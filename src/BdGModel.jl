@@ -11,28 +11,28 @@ module BdG
 
     import ..TightBindingToolkit.TBModel:FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, FreeEnergy
 
-    @doc """
-        `BdGModel` is a data type representing a general Tight Binding system with pairing.
+@doc """
+    `BdGModel` is a data type representing a general Tight Binding system with pairing.
 
-        # Attributes
-        - `uc_hop  ::  UnitCell`: the Unit cell of the lattice with the hoppings.
-        - `uc_pair ::  UnitCell`: the Unit cell of the lattice with the pairings.
-        - `bz      ::  BZ`: The discretized Brillouin Zone.
-        - `Ham     ::  Hamiltonian`: the Hamiltonian at all momentum-points.
-        - `T       ::  Float64`: the temperature of the system.
-        - `filling ::  Float64`: The filling of the system.
-        - `mu      ::  Float64`: The chemical potential of the system.
-        - `stat    ::  Int64` : ±1 for bosons and fermions.
-        - `gap     ::  Float64` : the energy gap of excitations at the given filling.
-        - `Gk      ::  Array{Matrix{ComplexF64}}` : An Array (corresponding to the grid of k-points in `BZ`) of Greens functions.
-        - `Fk      ::  Array{Matrix{ComplexF64}}` : An Array (corresponding to the grid of k-points in `BZ`) of anomalous Greens functions.
+    # Attributes
+    - `uc_hop  ::  UnitCell`: the Unit cell of the lattice with the hoppings.
+    - `uc_pair ::  UnitCell`: the Unit cell of the lattice with the pairings.
+    - `bz      ::  BZ`: The discretized Brillouin Zone.
+    - `Ham     ::  Hamiltonian`: the Hamiltonian at all momentum-points.
+    - `T       ::  Float64`: the temperature of the system.
+    - `filling ::  Float64`: The filling of the system.
+    - `mu      ::  Float64`: The chemical potential of the system.
+    - `stat    ::  Int64` : ±1 for bosons and fermions.
+    - `gap     ::  Float64` : the energy gap of excitations at the given filling.
+    - `Gk      ::  Array{Matrix{ComplexF64}}` : An Array (corresponding to the grid of k-points in `BZ`) of Greens functions.
+    - `Fk      ::  Array{Matrix{ComplexF64}}` : An Array (corresponding to the grid of k-points in `BZ`) of anomalous Greens functions.
 
-        Initialize this structure using 
-        ```julia
-        BdGModel(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1)
-        ```
-        You can either input a filling, or a chemical potential. The corresponding μ for a given filling, or filling for a given μ is automatically calculated.
-        """
+    Initialize this structure using 
+    ```julia
+    BdGModel(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1)
+    ```
+    You can either input a filling, or a chemical potential. The corresponding μ for a given filling, or filling for a given μ is automatically calculated.
+"""
     mutable struct BdGModel
         uc_hop  ::  UnitCell
         uc_pair ::  UnitCell
@@ -59,15 +59,15 @@ module BdG
     end
 
 
-    @doc """
-    ```julia
-    FindFilling(M::BdGModel) --> Float64
-    FindFilling(mu::Float64, M::BdGModel)
-    ```
-    Find filling at given temperature and chemical potential that takes BdGModel object as argument instead of Hamiltonian, since for a BdG case, the filling depends on the wavefunctions also.
-    Because of this, if you want to calculate the filling at a different chemical potential, you have to modify the Hamiltonian, the UnitCells, rediagonalize, and recalculate eveyrthing.
+@doc """
+```julia
+FindFilling(M::BdGModel) --> Float64
+FindFilling(mu::Float64, M::BdGModel)
+```
+Find filling at given temperature and chemical potential that takes BdGModel object as argument instead of Hamiltonian, since for a BdG case, the filling depends on the wavefunctions also.
+Because of this, if you want to calculate the filling at a different chemical potential, you have to modify the Hamiltonian, the UnitCells, rediagonalize, and recalculate eveyrthing.
 
-    """
+"""
     function FindFilling(M::BdGModel) :: Float64
         @assert M.Ham.is_BdG==true "Use other format for pure hopping Hamiltonian"
 
@@ -90,24 +90,24 @@ module BdG
     end
 
 
-    """
-    ```julia
-    GetFilling!(M::BdGModel)
-    ```
-    Function to get filling given a chemical potential!
+"""
+```julia
+GetFilling!(M::BdGModel)
+```
+Function to get filling given a chemical potential!
 
-    """
+"""
     function GetFilling!(M::BdGModel)
         M.filling   =   FindFilling(M.mu, M)
     end
 
 
-    """
-    ```julia
-    GetMu!(M::BdGModel ;  tol::Float64=0.001)
-    ```
-    Function to get the correct chemical potential given a filling.
-    """
+"""
+```julia
+GetMu!(M::BdGModel ;  tol::Float64=0.001)
+```
+Function to get the correct chemical potential given a filling.
+"""
     function GetMu!(M::BdGModel ;  mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
         M.mu    =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M,) ; x_tol = mu_tol, target_tol = filling_tol)
         @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
@@ -115,12 +115,12 @@ module BdG
     end
 
 
-    """
-    ```julia
-    GetGk!(M::BdGModel)
-    ```
-    Finding the Greens functions, and anomalous greens functions in momentum space at some chemical potential.
-    """
+"""
+```julia
+GetGk!(M::BdGModel)
+```
+Finding the Greens functions, and anomalous greens functions in momentum space at some chemical potential.
+"""
     function GetGk!(M::BdGModel)
 
         N       =   length(M.Ham.bands[begin])
@@ -144,13 +144,13 @@ module BdG
     end
 
 
-    @doc """
-    ```julia
-    GetGr!(M::BdGModel)
-    ```
-    Finding the equal-time Greens functions and anomalous Greens function in real space of a `BdGModel`.
+@doc """
+```julia
+GetGr!(M::BdGModel)
+```
+Finding the equal-time Greens functions and anomalous Greens function in real space of a `BdGModel`.
 
-    """
+"""
     function GetGr!(M::BdGModel)
         
         phaseShift   =  MomentumPhaseFFT(M.bz, M.uc_hop)
@@ -162,12 +162,13 @@ module BdG
         M.Fr         =  Fr .* phaseShift   
     end
 
-    """
-    ```julia
-    SolveModel!(M::BdGModel)
-    ```
-    one-step function to find all the attributes in  BdGModel after it has been initialized.
-    """
+
+@doc """
+```julia
+SolveModel!(M::BdGModel)
+```
+one-step function to find all the attributes in  BdGModel after it has been initialized.
+"""
     function SolveModel!(M::BdGModel ; get_correlations::Bool = true, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==true "Use other format for pure hopping Hamiltonian"
 
@@ -190,13 +191,14 @@ module BdG
         end
     end
 
-    @doc """
-    ```julia
-    FreeEnergy(M::BdGModel; F0::Float64 = 0.0) --> Float64
-    ```
-    Calculate the free energy of the given `BdGModel`.
 
-    """
+@doc """
+```julia
+FreeEnergy(M::BdGModel; F0::Float64 = 0.0) --> Float64
+```
+Calculate the free energy of the given `BdGModel`.
+
+"""
     function FreeEnergy(M::BdGModel ; F0::Float64 = 0.0) :: Float64
 
         Es      =   reduce(vcat, M.Ham.bands)

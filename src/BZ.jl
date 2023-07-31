@@ -7,13 +7,13 @@ module BZone
     using ..TightBindingToolkit.UCell: UnitCell
 
 
-    @doc """
-    ```julia
-    GetRLVs( uc::UnitCell ) --> Vector{Vector{Float64}}
-    ```
-    Returns the reciprocal lattice vectors corresponding to the given Unit Cell.
+@doc """
+```julia
+GetRLVs( uc::UnitCell ) --> Vector{Vector{Float64}}
+```
+Returns the reciprocal lattice vectors corresponding to the given Unit Cell.
 
-    """
+"""
     function GetRLVs( uc::UnitCell ) :: Vector{Vector{Float64}}
         if length(uc.primitives) == 1
             return [2 *pi ./ uc.primitives[1]]
@@ -39,24 +39,24 @@ module BZone
         end
     end
 
-    @doc """
-    `BZ` is a data type representing a discretized Brillouin Zone in momentum space.
+@doc """
+`BZ` is a data type representing a discretized Brillouin Zone in momentum space.
 
-    # Attributes
-    - `basis           :: Vector{ Vector{ Float64 } }`: reciprocal lattice vectors of the Brillouin Zone.
-    - `gridSize        :: Vector{Int64}`: The number of points along each dimension of the grid.
-    - `kInds           :: Vector{Array{Float64}}`: the [`Monkhorst`](@ref) grid corresponding to k along bs.
-    - `ks   	       :: Array{Vector{Float64}}`: The grid of momentum vectors k.
-    - `HighSymPoints   :: Dict`: A dictionary containing the HIgh-Symmetry points Γ, K(2), and M(3).
-    - `shift           :: Vector{Int64}` : how shifted the grid is from its centre point at the Γ point, in units of `1/gridSize`.
+# Attributes
+- `basis           :: Vector{ Vector{ Float64 } }`: reciprocal lattice vectors of the Brillouin Zone.
+- `gridSize        :: Vector{Int64}`: The number of points along each dimension of the grid.
+- `kInds           :: Vector{Array{Float64}}`: the [`Monkhorst`](@ref) grid corresponding to k along bs.
+- `ks   	       :: Array{Vector{Float64}}`: The grid of momentum vectors k.
+- `HighSymPoints   :: Dict`: A dictionary containing the HIgh-Symmetry points Γ, K(2), and M(3).
+- `shift           :: Vector{Int64}` : how shifted the grid is from its centre point at the Γ point, in units of `1/gridSize`.
 
-    Initialize this structure using 
-    ```julia
-    BZ(gridSize::Int64) --> defaults to dims = 2
-    BZ(gridSize::Int64, dims) --> Uniform grid in dimension = dims
-    BZ(gridSize::Vector{Int64})
-    ```
-    """
+Initialize this structure using 
+```julia
+BZ(gridSize::Int64) --> defaults to dims = 2
+BZ(gridSize::Int64, dims) --> Uniform grid in dimension = dims
+BZ(gridSize::Vector{Int64})
+```
+"""
     mutable struct BZ
         basis	        ::  Vector{Vector{Float64}}
         gridSize        ::  Vector{Int64}
@@ -76,16 +76,16 @@ module BZone
     end
 
 
-    @doc raw"""
-    ```julia
-    Monkhorst(ind::Int64, N::Int64) --> Float64
-    Monkhorst(ind::Int64, N::Int64, shift::Int64, BC::Float64) --> Float64
-    ```
-    The usual Monkhorst grid is defined as follows
-    `` [\frac{2i - (N+1)}{2N}, i∈[1, N]] ``
-    The modified Monkhorst grid takes into account the desired boundary condition `BC`, and an integer `shift` (if required, to change the starting point), and shifts the momentum grid accordingly.
+@doc raw"""
+```julia
+Monkhorst(ind::Int64, N::Int64) --> Float64
+Monkhorst(ind::Int64, N::Int64, shift::Int64, BC::Float64) --> Float64
+```
+The usual Monkhorst grid is defined as follows
+`` [\frac{2i - (N+1)}{2N}, i∈[1, N]] ``
+The modified Monkhorst grid takes into account the desired boundary condition `BC`, and an integer `shift` (if required, to change the starting point), and shifts the momentum grid accordingly.
 
-    """
+"""
     function Monkhorst(ind::Int64, N::Int64) :: Float64
         return (2 * ind - (N + 1)) / (2 * N)
     end
@@ -126,13 +126,13 @@ module BZone
     
     end
 
-    @doc """
-    ```julia
-    FillBZ!(bz::BZ, uc::UnitCell ; shift::Vector{Float64}=zeros(Float64, length(uc.primitives)))
-    ```
-    Fills the `BZ` object with the relevant attributes, after it has been initialized with `BZ(gridSize)`.
+@doc """
+```julia
+FillBZ!(bz::BZ, uc::UnitCell ; shift::Vector{Float64}=zeros(Float64, length(uc.primitives)))
+```
+Fills the `BZ` object with the relevant attributes, after it has been initialized with `BZ(gridSize)`.
 
-    """
+"""
     function FillBZ!(bz::BZ, uc::UnitCell; shift::Vector{Int64}=zeros(Int64, length(uc.primitives)))
 
         bz.basis    =   GetRLVs(uc)   ##### Get the reciprocal basis
@@ -160,13 +160,13 @@ module BZone
     end
 
 
-    @doc """
-    ```julia
-    ReduceQ(Q::Vector{Float64}, bz::BZ) --> Vector{Float64}
-    ```
-    Reduces a given momentum back to the range covered by the discretized Brillouin Zone.
+@doc """
+```julia
+ReduceQ(Q::Vector{Float64}, bz::BZ) --> Vector{Float64}
+```
+Reduces a given momentum back to the range covered by the discretized Brillouin Zone.
 
-    """
+"""
     function ReduceQ(Q::Vector{Float64}, bz::BZ) :: Vector{Float64}
 
         U           =   reduce(hcat, bz.basis) ##### basis transformation from x, y -> b1, b2
@@ -177,14 +177,14 @@ module BZone
     end
 
 
-    @doc """
-    ```julia
-    GetQIndex(Q::Vector{Float64}, bz::BZ ; nearest::Bool = false) --> Vector{Int64}
-    ```
-    Returns the index in the discretized `BZ` of the momentum point corresponding to the fiven momentum `Q`. 
-    If the input `nearest` is set to `true`, will return the index of the momentum point on the grid closest to `Q`, if `Q` does not exist on the grid. 
+@doc """
+```julia
+GetQIndex(Q::Vector{Float64}, bz::BZ ; nearest::Bool = false) --> Vector{Int64}
+```
+Returns the index in the discretized `BZ` of the momentum point corresponding to the fiven momentum `Q`. 
+If the input `nearest` is set to `true`, will return the index of the momentum point on the grid closest to `Q`, if `Q` does not exist on the grid. 
 
-    """
+"""
     function GetQIndex(Q::Vector{Float64}, bz::BZ ; nearest::Bool = false) :: Vector{Int64}
 
         Q_reduced   =   ReduceQ(Q, bz)
@@ -200,14 +200,14 @@ module BZone
     end
 
 
-    @doc """
-    ```julia
-    CombinedIndexPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) --> Vector{Vector{Int64}}
-    ```
-    Returns a path in index-space joins the given points present in `points` as point[1] --> point[2] --> ... --> point[end] --> point[1].
-    The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `closed` determines if the path is a closed loop or not.
+@doc """
+```julia
+CombinedIndexPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) --> Vector{Vector{Int64}}
+```
+Returns a path in index-space joins the given points present in `points` as point[1] --> point[2] --> ... --> point[end] --> point[1].
+The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `closed` determines if the path is a closed loop or not.
 
-    """
+"""
     function CombinedIndexPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) :: Vector{Vector{Int64}}
 
         if closed
@@ -225,14 +225,14 @@ module BZone
     end
 
 
-    @doc """
-    ```julia
-    GetBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) --> Vector{Vector{Float64}}
-    ```
-    Returns the actual path in momentum-space of the discretized `BZ` which joins the two momentums `start` and `ending`. 
-    The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `exclusive` is the same as in [`GetIndexPath`](@ref).
+@doc """
+```julia
+GetBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) --> Vector{Vector{Float64}}
+```
+Returns the actual path in momentum-space of the discretized `BZ` which joins the two momentums `start` and `ending`. 
+The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `exclusive` is the same as in [`GetIndexPath`](@ref).
 
-    """
+"""
     function GetBZPath(bz::BZ, start::Vector{Float64}, ending::Vector{Float64} ; nearest::Bool = false, exclusive::Bool = true) :: Vector{Vector{Float64}}
 
         start_ind   =   GetQIndex(start, bz ; nearest=nearest)
@@ -243,14 +243,14 @@ module BZone
     end
 
 
-    @doc """
-    ```julia
-    CombinedBZPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) --> Vector{Vector{Float64}}
-    ```
-    Returns a path in momentum-space of the discretized `BZ` which joins the given momentum points present in `points` as point[1] --> point[2] --> ... --> point[end] --> point[1].
-    The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `closed` determines if the path is a closed loop or not.
+@doc """
+```julia
+CombinedBZPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) --> Vector{Vector{Float64}}
+```
+Returns a path in momentum-space of the discretized `BZ` which joins the given momentum points present in `points` as point[1] --> point[2] --> ... --> point[end] --> point[1].
+The optional input `nearest` is the same as in [`GetQIndex`](@ref), and `closed` determines if the path is a closed loop or not.
 
-    """
+"""
     function CombinedBZPath(bz::BZ, points::Vector{Vector{Float64}} ; nearest::Bool = false, closed::Bool = true) :: Vector{Vector{Float64}}
 
         if closed

@@ -8,13 +8,13 @@ module Hams
 
     using LinearAlgebra, TensorCast, Logging
 
-    @doc """
-    ```julia
-    FillHoppingHamiltonian(uc::UnitCell, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}}) --> Matrix{ComplexF64}
-    ```
-    Returns the hopping Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`. `OnSiteMatrices` are used for the fields, with the convention that the last matrix is the one corresponding to the chemimcal potential.
+@doc """
+```julia
+FillHoppingHamiltonian(uc::UnitCell, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}}) --> Matrix{ComplexF64}
+```
+Returns the hopping Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`. `OnSiteMatrices` are used for the fields, with the convention that the last matrix is the one corresponding to the chemimcal potential.
 
-    """
+"""
     function FillHoppingHamiltonian(uc::UnitCell{2}, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}})
         dims    =   uc.localDim * length(uc.basis)
         H       =   zeros(ComplexF64, dims, dims)
@@ -42,13 +42,13 @@ module Hams
     end
 
 
-    @doc """
-    ```julia
-    FillPairingHamiltonian(uc::UnitCell, k::Vector{Float64}) --> Matrix{ComplexF64}
-    ```
-    Returns the pairing Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`.
+@doc """
+```julia
+FillPairingHamiltonian(uc::UnitCell, k::Vector{Float64}) --> Matrix{ComplexF64}
+```
+Returns the pairing Hamiltonian at momentum point `k`, corresponding to the bonds present in `UnitCell`.
 
-    """
+"""
     function FillPairingHamiltonian(uc::UnitCell{2}, k::Vector{Float64}) :: Matrix{ComplexF64}
         dims    =   uc.localDim * length(uc.basis)
         H       =   zeros(ComplexF64, dims, dims)
@@ -70,13 +70,13 @@ module Hams
     end
 
 
-    @doc raw"""
-    ```julia
-    FullHamiltonian(uc::UnitCell, bz::BZ) --> Matrix{Matrix{ComplexF64}}
-    ```
-    Returns the full Hamiltonian at all momentum points in `BZ`, corresponding to the bonds present in `UnitCell`.
+@doc raw"""
+```julia
+FullHamiltonian(uc::UnitCell, bz::BZ) --> Matrix{Matrix{ComplexF64}}
+```
+Returns the full Hamiltonian at all momentum points in `BZ`, corresponding to the bonds present in `UnitCell`.
 
-    """
+"""
     function FillHamiltonian(uc_hop::UnitCell{2}, uc_pair::UnitCell{2}, k::Vector{Float64} ; OnSiteMatrices::Vector{Matrix{ComplexF64}}) :: Matrix{ComplexF64}
 
         @assert IsSameUnitCell(uc_hop, uc_pair) "Inconsistent unit cells for hopping and pairing!"
@@ -102,22 +102,22 @@ module Hams
     end
 
 
-    @doc """
-    `Hamiltonian` is a data type representing a general momentum-space Hamiltonian corresponding to the given `UnitCell` and `BZ` (or 2 Unit Cells if it is a BdG Hamiltonian).
+@doc """
+`Hamiltonian` is a data type representing a general momentum-space Hamiltonian corresponding to the given `UnitCell` and `BZ` (or 2 Unit Cells if it is a BdG Hamiltonian).
 
-    # Attributes
-    - `H           :: Array{Matrix{ComplexF64}}`: A Array (corresponding to the grid of k-points in `BZ`) of Hamiltonian matrices.
-    - `bands       :: Array{Vector{Float64}}`: A Array (corresponding to the grid of k-points in `BZ`) of band spectrums.
-    - `states      :: Array{Matrix{ComplexF64}}`: A Array (corresponding to the grid of k-points in `BZ`) of band wavefunctions.
-    - `bandwidth   :: Tuple{Float64, Float64}` : the tuple of minimum and maximum energies in the band structure.
-    - `is_BdG      :: Bool` : is the Hamiltonian a bdG hamiltonian or a pure hopping hamiltonian.
+# Attributes
+- `H           :: Array{Matrix{ComplexF64}}`: A Array (corresponding to the grid of k-points in `BZ`) of Hamiltonian matrices.
+- `bands       :: Array{Vector{Float64}}`: A Array (corresponding to the grid of k-points in `BZ`) of band spectrums.
+- `states      :: Array{Matrix{ComplexF64}}`: A Array (corresponding to the grid of k-points in `BZ`) of band wavefunctions.
+- `bandwidth   :: Tuple{Float64, Float64}` : the tuple of minimum and maximum energies in the band structure.
+- `is_BdG      :: Bool` : is the Hamiltonian a bdG hamiltonian or a pure hopping hamiltonian.
 
-    Initialize this structure using
-    ```julia
-    Hamiltonian(uc::UnitCell, bz::BZ) --> Hopping Hamiltonian
-    Hamiltonian(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ) --> BdG Hamiltonian
-    ```
-    """
+Initialize this structure using
+```julia
+Hamiltonian(uc::UnitCell, bz::BZ) --> Hopping Hamiltonian
+Hamiltonian(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ) --> BdG Hamiltonian
+```
+"""
     mutable struct Hamiltonian
         H           ::  Array{Matrix{ComplexF64}}
         bands       ::  Array{Vector{Float64}}
@@ -131,13 +131,13 @@ module Hams
     end
 
 
-    @doc """
-    ```julia
-    DiagonalizeHamiltonian!(Ham::Hamiltonian)
-    ```
-    Diagonalize the `Hamiltonian` at all momentum points in the `BZ`. `verbose` is an optional argument to print when the Hamiltonian is diagonalized.
+@doc """
+```julia
+DiagonalizeHamiltonian!(Ham::Hamiltonian)
+```
+Diagonalize the `Hamiltonian` at all momentum points in the `BZ`. `verbose` is an optional argument to print when the Hamiltonian is diagonalized.
 
-    """
+"""
     function DiagonalizeHamiltonian!(Ham::Hamiltonian ; verbose::Bool=true)
         sols            =   eigen.(Hermitian.(Ham.H))
         Ham.bands       =   getfield.(sols, :values)
@@ -148,14 +148,15 @@ module Hams
         end
     end
 
-    @doc """
-    ```julia
-    ModifyHamiltonianField!(Ham::Hamiltonian, uc::UnitCell, newFields::Vector{Float64} ; dim::Int64=4, verbose::Bool=false)
-    ```
-    Faster implementation of modifying ONLY the on-site field part of a `Hamiltonian`. `newFields` must be a vector of the same length as `uc.basis`.
-    `dim` is an optional argument which determines which element of on-site field is being replaced.
 
-    """
+@doc """
+```julia
+ModifyHamiltonianField!(Ham::Hamiltonian, uc::UnitCell, newFields::Vector{Float64} ; dim::Int64=4, verbose::Bool=false)
+```
+Faster implementation of modifying ONLY the on-site field part of a `Hamiltonian`. `newFields` must be a vector of the same length as `uc.basis`.
+`dim` is an optional argument which determines which element of on-site field is being replaced.
+
+"""
     function ModifyHamiltonianField!(Ham::Hamiltonian, uc::UnitCell, newFields::Vector{Float64} ; dim::Int64=length(uc.fields[begin]), OnSiteMatrices::Vector{Matrix{ComplexF64}} = SpinMats((uc.localDim-1)//2) , verbose::Bool=false)
 
         @assert length(newFields)==length(uc.basis) "Inconsistent number of basis sites and fields given"
@@ -172,13 +173,13 @@ module Hams
     end
 
 
-    @doc """
-    ```julia
-    isBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) --> BitMatrix
-    ```
-    Returns a matrix of booleans marked as `true` if the band corresponding to the row and column of the matrix are gapped (greater than the tolerance), and false otherwise. 
+@doc """
+```julia
+isBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) --> BitMatrix
+```
+Returns a matrix of booleans marked as `true` if the band corresponding to the row and column of the matrix are gapped (greater than the tolerance), and false otherwise. 
 
-    """
+"""
     function IsBandGapped(H::Hamiltonian ; tol::Float64 = 1e-3) :: BitMatrix
         bands   =   reshape(H.bands, length(H.bands))
         @cast bandDiff[i, j][k] |= abs(bands[k][i] - bands[k][j])
@@ -188,14 +189,14 @@ module Hams
     end
 
 
-    @doc """
-    ```julia
-    DOS(Omega::Float64, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) --> Float64
-    DOS(Omegas::Vector{Float64}, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) --> Vector{Float64}
-    ```
-    Calculate the Density of State correspondingto the given energies in `Omegas`, for the lowest bands upto `till_band`.
-    The calculation is done at a finite `spread` of the delta-function sum. 
-    """
+@doc """
+```julia
+DOS(Omega::Float64, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) --> Float64
+DOS(Omegas::Vector{Float64}, Ham::Hamiltonian; till_band::Int64=length(Ham.bands[1, 1]), spread::Float64=1e-3) --> Vector{Float64}
+```
+Calculate the Density of State correspondingto the given energies in `Omegas`, for the lowest bands upto `till_band`.
+The calculation is done at a finite `spread` of the delta-function sum. 
+"""
     function DOS(Omega::Float64, energies::Vector{Float64}; spread::Float64=1e-2) :: Float64
 
         dos         =   @. 1 / ((Omega - energies) + im * spread)

@@ -8,13 +8,13 @@ module ExpandUCell
     using ..TightBindingToolkit.DesignUCell: AddAnisotropicBond!
 
 
-    @doc """
-	```julia
-	ChangePrimitives!(uc::UnitCell{T}, newPrimitives::Vector{Vector{Float64}})
-	```
-	Changes the pirmitive vectors of the given `UnitCell` assuming the sublattices stay the same. Changes the bonds accordingly.
+@doc """
+```julia
+ChangePrimitives!(uc::UnitCell{T}, newPrimitives::Vector{Vector{Float64}})
+```
+Changes the pirmitive vectors of the given `UnitCell` assuming the sublattices stay the same. Changes the bonds accordingly.
 
-	"""
+"""
     function ChangePrimitives!(uc::UnitCell{T}, newPrimitives::Vector{Vector{Float64}} ; OffsetRange::Int64 = 2, accuracy::Int64 = 6) where {T}
 
         oldPrimitives 	=	deepcopy(uc.primitives)
@@ -67,13 +67,13 @@ module ExpandUCell
     end
 
 
-    @doc """
-	```julia
-	ExpandUnitCell(ucOG::UnitCell{T}, scaling::Vector{Int64} ; OffsetRange::Int64 = 2)
-	```
-	Returns a UnitCell which is an integer multiple of the given UnitCell (the primitives are scaled by the given scalings along each direction). The bonds are properly redefined amongst the new sublattices and new primitive vectors.
+@doc """
+```julia
+ExpandUnitCell(ucOG::UnitCell{T}, scaling::Vector{Int64} ; OffsetRange::Int64 = 2)
+```
+Returns a UnitCell which is an integer multiple of the given UnitCell (the primitives are scaled by the given scalings along each direction). The bonds are properly redefined amongst the new sublattices and new primitive vectors.
 
-	"""
+"""
     function ExpandUnitCell(ucOG::UnitCell{T}, scaling::Vector{Int64} ; OffsetRange::Int64 = 2, accuracy::Int64 = 6) :: UnitCell{T} where {T}
 
         asNew 		=	scaling .* ucOG.primitives
@@ -107,13 +107,13 @@ module ExpandUCell
     end
 
 
-    @doc """
-	```julia
-	ExpandBonds!(ucOG::UnitCell{T}, ucNew::UnitCell{T} ; OffsetRange::Int64 = 2)
-	```
-	An in-place version of `ExpandUnitCell` which works with the new primitive vectors given in `ucNew`.
+@doc """
+```julia
+ExpandBonds!(ucOG::UnitCell{T}, ucNew::UnitCell{T} ; OffsetRange::Int64 = 2)
+```
+An in-place version of `ExpandUnitCell` which works with the new primitive vectors given in `ucNew`.
 
-	"""
+"""
     function ExpandBonds!(ucOG::UnitCell{T}, ucNew::UnitCell{T} ; OffsetRange::Int64 = 2, accuracy::Int64 = 6) where {T}
 
         DistanceDictNew 	=	GetRealSpacePositions(ucNew ; OffsetRange = OffsetRange, accuracy = accuracy)

@@ -3,13 +3,13 @@ module Useful
 
     using LinearAlgebra, Statistics, FFTW, TensorCast
 
-    @doc """
-    ```julia
-    GetAllOffsets(OffsetRange::Int64, dim::Int64) --> Vector{Vector{Int64}}
-    ```
-    Given a range, returns the set of all possible Bond offsets such that each element of the offset vector lies in [-`OffsetRange`, `OffsetRange`].
+@doc """
+```julia
+GetAllOffsets(OffsetRange::Int64, dim::Int64) --> Vector{Vector{Int64}}
+```
+Given a range, returns the set of all possible Bond offsets such that each element of the offset vector lies in [-`OffsetRange`, `OffsetRange`].
 
-    """
+"""
     function GetAllOffsets(OffsetRange::Int64, dim::Int64) :: Vector{Vector{Int64}}
         if dim==1
             offsets 	=	collect([i] for i in OffsetRange:-1:-OffsetRange)
@@ -24,25 +24,25 @@ module Useful
     end
 
 
-    @doc """
-    ```julia
-    VecAngle(a::Vector{Float64}, b::Vector{Float64})
-    ```
-    returns the angle b/w two given vectors.
+@doc """
+```julia
+VecAngle(a::Vector{Float64}, b::Vector{Float64})
+```
+returns the angle b/w two given vectors.
 
-    """
+"""
     function VecAngle(a::Vector{Float64}, b::Vector{Float64})
         return acos(clamp(a⋅b/(norm(a)*norm(b)), -1, 1))
     end
 
 
-    @doc """
-    ```julia
-    Meshgrid(grid::Vector{Int64} ; starts::Vector{Int64} = zeros(Int64, length(grid)))
-    ```
-    returns a meshgrid of (i_1, i_2, ..., i_n) such that i_j ∈ [starts[j], starts[j] + 1, ..., grid[j]] ∀ j in [1, 2, ..., n = length(grid)]
+@doc """
+```julia
+Meshgrid(grid::Vector{Int64} ; starts::Vector{Int64} = zeros(Int64, length(grid)))
+```
+returns a meshgrid of (i_1, i_2, ..., i_n) such that i_j ∈ [starts[j], starts[j] + 1, ..., grid[j]] ∀ j in [1, 2, ..., n = length(grid)]
 
-    """
+"""
     function Meshgrid(grid::Vector{Int64} ; starts::Vector{Int64} = ones(Int64, length(grid)))
         inds    =   UnitRange.( starts, grid)
         inds    =   collect(Base.product(inds...))
@@ -50,13 +50,13 @@ module Useful
     end
 
 
-    @doc """
-    ```julia
-    BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; tol::Float64=0.001)
-    ```
-    General function implementing Binary search on a monotonic function f(x, args...)=target, in the range x ∈ xRange, with tolerance tol. 
+@doc """
+```julia
+BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; tol::Float64=0.001)
+```
+General function implementing Binary search on a monotonic function f(x, args...)=target, in the range x ∈ xRange, with tolerance tol. 
 
-    """
+"""
     function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; x_tol::Float64 = 0.001, target_tol::Float64 = 1e-6) where T<:Function
         xExt = collect(xRange)
         current = nothing
@@ -78,39 +78,39 @@ module Useful
     end
 
 
-    @doc """
-    ```julia
-    DistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-    ```
-    Distribution function. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
+@doc """
+```julia
+DistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
+```
+Distribution function. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
 
-    """
+"""
     function DistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
         return @. 1 / (exp((E - mu) / T) - stat)
     end
 
 
-    @doc """
-    ```julia
-    DeriDistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-    ```
-    derivative of [`dist`](@ref) w.r.t the energy. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
+@doc """
+```julia
+DeriDistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
+```
+derivative of [`dist`](@ref) w.r.t the energy. `stat`=1 --> Bose-Einstein distribution, and `stat`=-1 --> Fermi distribution.
 
-    """
+"""
     function DeriDistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
         return @. - (1/T) * exp((E - mu) / T) / ((exp((E - mu) / T) - stat) ^ 2)
     end
 
 
-    @doc """
-    ```julia
-    GetIndexPath(start::Vector{Int64}, ending::Vector{Int64} ; exclusive::Bool=true) --> Vector{Vector{Int64}}
-    ```
-    Returns a path in index-space of a discretized lattice which joins the two sets of indices `start` and `ending`. 
-    If the input `exclusive` is set to `true`, the returned path will NOT contain the `ending` point itself.
-    Works in any dimensions.
+@doc """
+```julia
+GetIndexPath(start::Vector{Int64}, ending::Vector{Int64} ; exclusive::Bool=true) --> Vector{Vector{Int64}}
+```
+Returns a path in index-space of a discretized lattice which joins the two sets of indices `start` and `ending`. 
+If the input `exclusive` is set to `true`, the returned path will NOT contain the `ending` point itself.
+Works in any dimensions.
 
-    """
+"""
     function GetIndexPath(start::Vector{Int64}, ending::Vector{Int64} ; exclusive::Bool=true) :: Vector{Vector{Int64}}
     
         dx  = ending - start

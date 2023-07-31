@@ -12,22 +12,22 @@ module suscep
     directions = ["x" , "y" , "z"]
 
 
-    @doc """
-    `Susceptibility` is a data type representing the magnetic response, ``χ^{ab}(Q , Ω)`` for a general tight-binding `Model`.
+@doc """
+`Susceptibility` is a data type representing the magnetic response, ``χ^{ab}(Q , Ω)`` for a general tight-binding `Model`.
 
-    # Attributes
-    - `M       ::  Model `: the given model.
-    - `Qs      ::  Vector{Vector{Float64}}`: the set of momentum points over which ``χ^{ab}(Q , Ω)`` is calculated.
-    - `Omegas  ::  Vector{Float64}`: the set of energies over which ``χ^{ab}(Q , Ω)`` is calculated.
-    - `Spread  ::  Float64` : the finite spread when summing over delta functions.
-    - `chis    ::  Dict`: a dictionary containing ``χ^{ab}(Q , Ω)`` for the different directions e.g. `chis["xx"]` etc.
+# Attributes
+- `M       ::  Model `: the given model.
+- `Qs      ::  Vector{Vector{Float64}}`: the set of momentum points over which ``χ^{ab}(Q , Ω)`` is calculated.
+- `Omegas  ::  Vector{Float64}`: the set of energies over which ``χ^{ab}(Q , Ω)`` is calculated.
+- `Spread  ::  Float64` : the finite spread when summing over delta functions.
+- `chis    ::  Dict`: a dictionary containing ``χ^{ab}(Q , Ω)`` for the different directions e.g. `chis["xx"]` etc.
 
-    Initialize this structure using 
-    ```julia
-    Susceptibility(M::Model , Omegas::Vector{Float64} ;  eta::Float64 = 1e-2) = new{}(M, [], Omegas, eta, Dict())
-    Susceptibility(M::Model , Qs::Vector{Vector{Float64}}, Omegas::Vector{Float64} ;  eta::Float64 = 1e-2) = new{}(M, Qs, Omegas, eta, Dict())
-    ```
-    """
+Initialize this structure using 
+```julia
+Susceptibility(M::Model , Omegas::Vector{Float64} ;  eta::Float64 = 1e-2) = new{}(M, [], Omegas, eta, Dict())
+Susceptibility(M::Model , Qs::Vector{Vector{Float64}}, Omegas::Vector{Float64} ;  eta::Float64 = 1e-2) = new{}(M, Qs, Omegas, eta, Dict())
+```
+"""
     mutable struct Susceptibility
         M       ::  Model   
         Qs      ::  Vector{Vector{Float64}}
@@ -40,13 +40,13 @@ module suscep
     end
 
 
-    @doc raw"""
-    ```julia
-    nF_factor(Q_index::Vector{Int64}, Omega::Float64 , M::Model; eta::Float64=1e-2) --> Matrix{Matrix{ComplexF64}}
-    ```
-    function to calculate ``(nF(E(k)) - nF(E(k+Q))) / (Ω + i * η - (E(k+Q) - E(k)))`` for a general multi-band system, at all k-points.
+@doc raw"""
+```julia
+nF_factor(Q_index::Vector{Int64}, Omega::Float64 , M::Model; eta::Float64=1e-2) --> Matrix{Matrix{ComplexF64}}
+```
+function to calculate ``(nF(E(k)) - nF(E(k+Q))) / (Ω + i * η - (E(k+Q) - E(k)))`` for a general multi-band system, at all k-points.
 
-    """
+"""
     function nF_factor(Q_index::Vector{Int64}, Omega::Float64 , M::Model; eta::Float64=1e-2) :: Matrix{Matrix{ComplexF64}}
         
         Es_k    =   M.Ham.bands
@@ -62,13 +62,13 @@ module suscep
     end 
 
 
-    @doc """
-    ```julia
-    FindChi(Q::Vector{Float64}, Omega::Float64 , M::Model; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> ComplexF64
-    ```
-    function to calculate susceptibility at a fixed Ω=`Omega`, and `Q`, and along a fixed direction given by `a` and `b`.
+@doc """
+```julia
+FindChi(Q::Vector{Float64}, Omega::Float64 , M::Model; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> ComplexF64
+```
+function to calculate susceptibility at a fixed Ω=`Omega`, and `Q`, and along a fixed direction given by `a` and `b`.
 
-    """
+"""
     function FindChi(Q::Vector{Float64}, Omega::Float64 , M::Model; a::Int64=3, b::Int64=3, eta::Float64=1e-2, SpinMatrix::Vector{Matrix{ComplexF64}} = SpinMats((M.uc.localDim-1)//2)) ::ComplexF64
 
         expQ    =   diagm(exp.(-im .* dot.(Ref(Q) , M.uc.basis)))
@@ -95,37 +95,37 @@ module suscep
     end
 
 
-    @doc """
-    ```julia
-    FindChi_FullBZ(Omega::Float64 , M::Model ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Matrix{ComplexF64}
-    ```
-    function to calculate susceptibility at a fixed Ω=`Omega`, but for all `Q` present in the `BZ`, and along a fixed direction given by `a` and `b`.
+@doc """
+```julia
+FindChi_FullBZ(Omega::Float64 , M::Model ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Matrix{ComplexF64}
+```
+function to calculate susceptibility at a fixed Ω=`Omega`, but for all `Q` present in the `BZ`, and along a fixed direction given by `a` and `b`.
 
-    """
+"""
     function FindChi_FullBZ(Omega::Float64 , M::Model ; a::Int64=3, b::Int64=3, eta::Float64=1e-2, SpinMatrix::Vector{Matrix{ComplexF64}} = SpinMats((M.uc.localDim-1)//2)) :: Matrix{ComplexF64}
         return FindChi.(M.bz.ks, Ref(Omega), Ref(M) ; a=a, b=b, eta=eta, SpinMatrix = SpinMatrix)
     end
 
 
-    @doc """
-    ```julia
-    FindChi_Path(Omega::Float64 , M::Model, path::Vector{Vector{Float64}} ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Vector{ComplexF64}
-    ```
-    function to calculate susceptibility at a fixed Ω=`Omega`, but for all `Q` present in the given path, and along a fixed direction given by `a` and `b`.
+@doc """
+```julia
+FindChi_Path(Omega::Float64 , M::Model, path::Vector{Vector{Float64}} ; a::Int64=3, b::Int64=3, eta::Float64=1e-2) --> Vector{ComplexF64}
+```
+function to calculate susceptibility at a fixed Ω=`Omega`, but for all `Q` present in the given path, and along a fixed direction given by `a` and `b`.
 
-    """
+"""
     function FindChi_Path(Omega::Float64 , M::Model, path::Vector{Vector{Float64}} ; a::Int64=3, b::Int64=3, eta::Float64=1e-2, SpinMatrix::Vector{Matrix{ComplexF64}} = SpinMats((M.uc.localDim-1)//2)) :: Vector{ComplexF64}
         return FindChi.(path, Ref(Omega), Ref(M) ; a=a, b=b, eta=eta, SpinMatrix = SpinMatrix)
     end
 
 
-    @doc """
-    ```julia
-    FillChis!(chi::Susceptibility; fill_BZ::Bool=false, a::Int64=3, b::Int64=3)
-    ```
-    function to calculate susceptibility at a all given Ω=`Omegas`, but for all `Q` present in the given path, and along a fixed direction given by `a` and `b`.
+@doc """
+```julia
+FillChis!(chi::Susceptibility; fill_BZ::Bool=false, a::Int64=3, b::Int64=3)
+```
+function to calculate susceptibility at a all given Ω=`Omegas`, but for all `Q` present in the given path, and along a fixed direction given by `a` and `b`.
 
-    """
+"""
     function FillChis!(chi::Susceptibility; fill_BZ::Bool=false, a::Int64=3, b::Int64=3, SpinMatrix::Vector{Matrix{ComplexF64}} = SpinMats((chi.M.uc.localDim-1)//2))
         @assert prod(chi.M.bz.gridSize .% 2) == 1  "Only works if the Gamma point is included in the grid ---> grid size must be odd!"
 

@@ -1,10 +1,12 @@
 module PlotTB
-    export Plot_UnitCell! ,Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!
+    export Plot_UnitCell! ,Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!, Plot_Fields!
 
     using LinearAlgebra, LaTeXStrings, Plots
 
     using ..TightBindingToolkit.Useful: GetAllOffsets
+    using ..TightBindingToolkit.SpinMatrices: SpinMats
     using ..TightBindingToolkit.UCell:UnitCell
+    using ..TightBindingToolkit.DesignUCell:Lookup
     using ..TightBindingToolkit.BZone:BZ, GetQIndex, GetBZPath, CombinedBZPath, ReduceQ
     using ..TightBindingToolkit.Hams:Hamiltonian
     using ..TightBindingToolkit.TBModel:Model
@@ -21,68 +23,170 @@ module PlotTB
     `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
 
     """
-    function Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=false, plot_labels::Vector{String} = unique(getproperty.(uc.bonds, :label)), plot_arrows::Bool = true, bond_opacity::Float64 = 0.6)
+    function Plot_UnitCell!(uc::UnitCell ; range::Int64 = 1, bond_cmp::Symbol = :matter, sub_cmp::Symbol = :rainbow, plot_conjugate::Bool=false, plot_labels::Vector{String} = unique(getproperty.(uc.bonds, :label)), plot_arrows::Bool = true, bond_opacity::Float64 = 0.6, site_size::Float64 = 16.0, bond_thickness::Tuple{Float64, Float64} = (4.0, 2.0), bond_rev::Bool=false, plot_lattice::Bool=false)
         
         dim         =   length(uc.primitives)
         @assert dim == 2 "Unit Cell plotting only works for 2d right now!"
         offsets     =   GetAllOffsets(range, dim)
 
+        subCmp     =   cgrad(sub_cmp, max(2 , length(uc.basis)), categorical=true, rev=true)
+
         p       =   plot(aspect_ratio=:equal, grid=false)
         ##### Plotting sites
         for offset in offsets
             shift   =   sum(offset .* uc.primitives)
-            sites   =   uc.basis .+ Ref(shift)
-            ##### Lattice sites
-            if offset == zeros(Int64, dim)
-                scatter!(Tuple.(sites), label = "", markercolor=:darkorange1, markersize=16, markerstrokecolor = :darkred, markerstrokewidth = 5) ##### Differentiationg the unit cell
-            else
-                scatter!(Tuple.(sites), label = "", markercolor=:darkorange1, markersize=16)
-            end
 
-            if offset == zeros(Int64, dim)
-                for (i, site) in enumerate(sites)
-                    annotate!(site..., Plots.text(L"\mathbf{%$i}", :center, 16, :beige)) ##### Sublattice labels
-                end
-                ##### Lattice primitive vectors
-                for primitive in uc.primitives
-                    base    =   uc.basis[begin]
-                    target  =   uc.basis[begin] .+ primitive
-                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=:seagreen , linewidth=6 , label = "", linealpha=0.75)
-                end
+            for (b, basis) in enumerate(uc.basis)
 
+                site   =   basis + shift
+                ##### Lattice sites
+                scatter!(Tuple(site), label = "", markercolor=:darkorange1, markersize=site_size, markeralpha = 0.7, markerstrokecolor = subCmp[b], markerstrokewidth = site_size / 2)
+                annotate!(site..., Plots.text(L"\mathbf{%$(b)}", :hcenter, :vcenter, round(Int64, site_size), :beige)) ##### Sublattice labels
+
+
+                if offset == zeros(Int64, dim) && b==1
+                    ##### Lattice primitive vectors
+                    for (p, primitive) in enumerate(uc.primitives)
+                        base    =   uc.basis[begin]
+                        target  =   uc.basis[begin] .+ primitive
+
+                        if p==1
+                            plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=:seagreen , linewidth=8 , label = "primitives", linealpha=0.75)
+                        else
+                            plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=true , color=:seagreen , linewidth=8 , label = "", linealpha=0.75)
+                        end
+                    end
+
+                end
             end
 
         end
 
         ##### Different labels, colors, and thickness of each bond types.
         labels      =   unique(getproperty.(uc.bonds, :label))
-        cmp         =   cgrad(cmp, max(2 , length(labels)), categorical=true, rev=true)
-        thickness   =   collect(4:-2/(max(2 , length(labels)) -1):2)   
+        cmp         =   cgrad(bond_cmp, max(2 , length(labels)), categorical=true, rev=bond_rev)
+        thickness   =   collect(bond_thickness[1]:-(bond_thickness[1] - bond_thickness[2])/(max(2 , length(labels)) -1):bond_thickness[2])   
         counts      =   zeros(Int64, length(labels))
         
         ##### Plotting bonds
-        for bond in uc.bonds
-            base    =   uc.basis[bond.base]
-            target  =   uc.basis[bond.target] .+ sum(bond.offset .* uc.primitives)
-            target_conj     =   uc.basis[bond.target] .- sum(bond.offset .* uc.primitives)
+        if !plot_lattice
 
-            index   =   findfirst(==(bond.label), labels)
-            counts[index]   +=  1
+            for bond in uc.bonds
+                base    =   uc.basis[bond.base]
+                target  =   uc.basis[bond.target] .+ sum(bond.offset .* uc.primitives)
+                base_conj       =   uc.basis[bond.target]
+                target_conj     =   uc.basis[bond.base] .- sum(bond.offset .* uc.primitives)
 
-            if counts[index] == 1 && bond.label in plot_labels
-                plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=bond_opacity)
-            elseif counts[index] > 1 && bond.label in plot_labels
-                plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
+                index   =   findfirst(==(bond.label), labels)
+                counts[index]   +=  1
+
+                if counts[index] == 1 && bond.label in plot_labels
+                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=bond_opacity)
+                elseif counts[index] > 1 && bond.label in plot_labels
+                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
+                end
+                ##### Plotting the conjugate of each bond
+                if plot_conjugate && bond.label in plot_labels
+                    plot!([base_conj[begin] , target_conj[begin]] , [base_conj[end], target_conj[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.5)
+                end
             end
-            ##### Plotting the conjugate of each bond
-            if plot_conjugate && bond.label in plot_labels
-                plot!([target_conj[begin] , base[begin]] , [target_conj[end], base[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.5)
+
+        else
+            for offset in offsets
+                shift   =   sum(offset .* uc.primitives)
+
+                for bond in uc.bonds
+                    base    =   shift + uc.basis[bond.base]
+                    target  =   shift + uc.basis[bond.target] .+ sum(bond.offset .* uc.primitives)
+    
+                    index   =   findfirst(==(bond.label), labels)
+                    counts[index]   +=  1
+    
+                    if counts[index] == 1 && bond.label in plot_labels && offset == zeros(Int64, dim)
+                        plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=bond_opacity)
+                    elseif counts[index] > 1 && bond.label in plot_labels 
+                        plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
+                    end
+
+                end
             end
         end
 
         xlabel!(L"x")
         ylabel!(L"y")
         title!("Unit Cell")
+
+        return p
+
+    end
+
+
+    @doc """
+    ```julia
+    Plot_Fields!(uc::UnitCell ; range::Int64 = 1, cmp::Symbol = :matter, plot_conjugate::Bool=true) --> Plots.plot()
+    ```
+    Function to plot the `UnitCell`. 
+    `range` determines the range of UnitCells plotted in real-space. default is ±1.
+    `cmp` determines the colorScheme of chosen to differentiate b.w different hopping types.
+    `plot_conjugate` switches on whether the conjugate of the bonds in `UnitCell` are also plotted or not.
+
+    """
+    function Plot_Fields!(uc::UnitCell ; OnSiteMatrices::Vector{Matrix{ComplexF64}}=SpinMats((uc.localDim - 1)//2), scale::Float64 = 1.0, range::Int64 = 1, cmp::Symbol = :thermal, field_thickness::Float64 = 1.0, field_opacity::Float64 = 0.6, use_lookup::Bool = false, site_size::Float64 = 12.0)
+        
+        dim         =   length(uc.primitives)
+        @assert dim == 2 "Unit Cell plotting only works for 2d right now!"
+        offsets     =   GetAllOffsets(range, dim)
+
+        fields  =   Vector{Float64}[]
+        if use_lookup
+            lookup  =   Lookup(uc)
+
+            for (b, basis) in enumerate(uc.basis)
+                fieldMat   =   get(lookup, (b, b, zeros(Int64, 2)), zeros(Float64, 3))
+                field      =   real.(tr.( adjoint.(OnSiteMatrices) .* Ref(fieldMat)) ./ (tr.(adjoint.(OnSiteMatrices) .* OnSiteMatrices)))[1:3]
+                push!(fields, scale .* field)
+            end
+
+        else
+            for (b, basis) in enumerate(uc.basis)
+                field   =   uc.fields[b][1:3]
+                push!(fields, scale .* field)
+            end
+        end
+
+        fieldZs     =   (getindex.(fields, 3) ./ norm.(fields))
+        cmp         =   cgrad(cmp)
+
+        p       =   plot(aspect_ratio=:equal, grid=false, colorbar = true, bg_legend = :transparent)
+        ##### Plotting sites
+        for offset in offsets
+            shift   =   sum(offset .* uc.primitives)
+
+            for (b, basis) in enumerate(uc.basis)
+
+                site   =   basis + shift
+                field  =   fields[b][1:2]
+                ##### Lattice sites
+                if offset == zeros(Int64, dim)
+                    scatter!(Tuple(site), label = "", markercolor=:darkorange1, markersize=site_size, markerstrokecolor = :darkred, markerstrokewidth = 4) ##### Differentiationg the unit cell
+                    theta   =   round(acos(fieldZs[b]) / pi, digits = 3)
+                    plot!([site[begin] - (field[begin] / 2) , site[begin] + (field[begin] / 2)] , [site[end] - (field[end] / 2), site[end] + (field[end] / 2)] , arrow=true , color=cmp[(fieldZs[b] + 1)/2] , linewidth=field_thickness , label = L"\theta = %$(theta) \pi", linealpha=field_opacity)
+
+                else
+                    scatter!(Tuple(site), label = "", markercolor=:darkorange1, markersize=site_size)
+                    plot!([site[begin] - (field[begin] / 2) , site[begin] + (field[begin] / 2)] , [site[end] - (field[end] / 2), site[end] + (field[end] / 2)] , arrow=true , color=cmp[(fieldZs[b] + 1)/2] , linewidth=field_thickness , label = "" , linealpha=field_opacity)
+                end                
+
+                if offset == zeros(Int64, dim)
+                    annotate!(site..., Plots.text(L"\mathbf{%$(b)}", :hcenter, :vcenter, Int(site_size), :beige)) ##### Sublattice labels
+                end
+            end
+
+        end
+
+        xlabel!(L"x")
+        ylabel!(L"y")
+        title!("Fields")
 
         return p
 

@@ -8,22 +8,22 @@ module Parameters
 
     using LinearAlgebra, Logging
 
-    @doc """
-	`Param{T}` is a data type representing a general tight-binding parameter, which can span multiple bonds.
-	
-	# Attributes
-	- `value        ::  Vector{ Float64 }`: the strength of the parameter (or even the full history of it if its changed).
-	- `unitBonds    ::  Vector{ Bond{T} }`: All the bonds this parameter lives on. These bonds are supposed to have "unit" strength, and ultimately get scaled by the `value` when making the `UnitCell`.
-	- `label        ::  String`: some string label to mark the parameter.  
-	- `dist         ::  Float64`: the distance of the bonds the parameter lives on.
-	
-	Initialize this structure using 
-	```julia
-	Param( value::Float64 )
-    Param( value::Float64 , rank::Int64 )
-	```
-	
-    """
+@doc """
+`Param{T}` is a data type representing a general tight-binding parameter, which can span multiple bonds.
+
+# Attributes
+- `value        ::  Vector{ Float64 }`: the strength of the parameter (or even the full history of it if its changed).
+- `unitBonds    ::  Vector{ Bond{T} }`: All the bonds this parameter lives on. These bonds are supposed to have "unit" strength, and ultimately get scaled by the `value` when making the `UnitCell`.
+- `label        ::  String`: some string label to mark the parameter.  
+- `dist         ::  Float64`: the distance of the bonds the parameter lives on.
+
+Initialize this structure using 
+```julia
+Param( value::Float64 )
+Param( value::Float64 , rank::Int64 )
+```
+
+"""
     mutable struct Param{T}  
         value       ::  Vector{Float64}
         unitBonds   ::  Vector{Bond{T}} 
@@ -41,15 +41,15 @@ module Parameters
     end 
 
 
-    @doc """
-	```julia
-	AddAnisotropicBond!( param::Param, uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String )
-	AddAnisotropicBond!( param::Param, uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Matrix{<:Number} , dist::Float64, label::String )
-	```
-	Add a bond with the given attributes to `param`.
-	If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
+@doc """
+```julia
+AddAnisotropicBond!( param::Param, uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String )
+AddAnisotropicBond!( param::Param, uc::UnitCell , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Matrix{<:Number} , dist::Float64, label::String )
+```
+Add a bond with the given attributes to `param`.
+If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 
-	"""
+"""
     function AddAnisotropicBond!( param::Param{T}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T}
 	
         @assert uc.localDim == 1
@@ -97,17 +97,17 @@ module Parameters
     end
 
 
-    @doc """
-	```julia
-	AddIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
-	AddIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Matrix{<:Number} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
-	```
-	Add a set of "isotropic" bonds, which are the same for each pair of sites at the given distance. 
-	If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
-	The input `checkOffsetRange` must be adjusted depending on the input distance. 
-	The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
+@doc """
+```julia
+AddIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
+AddIsotropicBonds!( param::Param, uc::UnitCell , dist::Float64 , mats::Matrix{<:Number} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
+```
+Add a set of "isotropic" bonds, which are the same for each pair of sites at the given distance. 
+If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
+The input `checkOffsetRange` must be adjusted depending on the input distance. 
+The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
 
-    """
+"""
     function AddIsotropicBonds!( param::Param{T}, uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T}
 
         @assert uc.localDim == 1
@@ -169,14 +169,14 @@ module Parameters
     end
 
 
-    @doc """
-	```julia
-	CreateUnitCell!(uc::UnitCell, param::Param , index::Int64=length(param.value))
-	CreateUnitCell!(uc::UnitCell, params::Vector{Param}, indices::Vector{Int64}=length.(getproperty.(params, :value)))
-	```
-	Add bonds corrsponding to a `param` to `UnitCell`, scaled with the `param.value[index]`. Also includes the broadcasted call.
+@doc """
+```julia
+CreateUnitCell!(uc::UnitCell, param::Param , index::Int64=length(param.value))
+CreateUnitCell!(uc::UnitCell, params::Vector{Param}, indices::Vector{Int64}=length.(getproperty.(params, :value)))
+```
+Add bonds corrsponding to a `param` to `UnitCell`, scaled with the `param.value[index]`. Also includes the broadcasted call.
 
-	"""
+"""
     function CreateUnitCell!(uc::UnitCell{T}, param::Param{T} , index::Int64=length(param.value)) where {T}
         bonds   =   deepcopy(param.unitBonds)
         map(x -> x.mat = param.value[index] * x.mat, bonds)
@@ -191,14 +191,14 @@ module Parameters
     end
 
 
-    @doc """
-	```julia
-	ModifyUnitCell!(uc::UnitCell, param::Param)
-	ModifyUnitCell!(uc::UnitCell, params::Vector{Param})
-	```
-	Modify all bonds in `UnitCell` corresponding to given `param`, taking the latest value in `param.value`. 
+@doc """
+```julia
+ModifyUnitCell!(uc::UnitCell, param::Param)
+ModifyUnitCell!(uc::UnitCell, params::Vector{Param})
+```
+Modify all bonds in `UnitCell` corresponding to given `param`, taking the latest value in `param.value`. 
 
-	"""
+"""
     function ModifyUnitCell!(uc::UnitCell{T}, param::Param{T}) where {T}
 
         RemoveBonds!(uc, param.label)
@@ -211,14 +211,14 @@ module Parameters
     end
 
 
-    @doc """
-	```julia
-    GetParams(uc::UnitCell) --> Vector{Param}
-    ```
-	For legacy purposes. 
-    If you have a `UnitCell` built using the old technique of adding bonds directly, you can get a vector of `Param` using this function, corresponding to each unique bond type already present in `UnitCell`.
+@doc """
+```julia
+GetParams(uc::UnitCell) --> Vector{Param}
+```
+For legacy purposes. 
+If you have a `UnitCell` built using the old technique of adding bonds directly, you can get a vector of `Param` using this function, corresponding to each unique bond type already present in `UnitCell`.
 
-    """
+"""
     function GetParams(uc::UnitCell{T}) :: Vector{Param{T}} where {T}
         
         params  =   Param{T}[]

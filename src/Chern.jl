@@ -6,15 +6,15 @@ module Chern
     using LinearAlgebra
 
 
-    @doc """
-    ```julia
-    FindLinks(Ham::Hamiltonian, subset::Vector{Int64}) --> Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
-    ```
-    Function to get the linking matrices on each neighbouring point in the `BZ`.
-    On a bond connecting k_i and k_j, the linking matrix U is defined such that U[m, n] = <v^m[k_i]|v^n[k_j]> where states[k_j[1], k_j[2], :, m] 
-    v^m[k_j], the mth eigenstate at momentum k_j.
+@doc """
+```julia
+FindLinks(Ham::Hamiltonian, subset::Vector{Int64}) --> Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
+```
+Function to get the linking matrices on each neighbouring point in the `BZ`.
+On a bond connecting k_i and k_j, the linking matrix U is defined such that U[m, n] = <v^m[k_i]|v^n[k_j]> where states[k_j[1], k_j[2], :, m] 
+v^m[k_j], the mth eigenstate at momentum k_j.
 
-    """
+"""
     function FindLinks(Ham::Hamiltonian, subset::Vector{Int64})::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
         shifted_1   =   circshift(Ham.states, [-1, 0])
         shifted_2   =   circshift(Ham.states, [0, -1])
@@ -27,13 +27,13 @@ module Chern
     end
 
 
-    @doc """
-    ```julia
-    FieldStrength(Links::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}) --> Matrix{ComplexF64}
-    ```
-    Function to calculate the product of the links over each plaquette on the BZ grid. This is the generalized Bery curvature for multiple degenerate bands.
+@doc """
+```julia
+FieldStrength(Links::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}) --> Matrix{ComplexF64}
+```
+Function to calculate the product of the links over each plaquette on the BZ grid. This is the generalized Bery curvature for multiple degenerate bands.
 
-    """
+"""
     function FieldStrength(Links::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}})::Matrix{ComplexF64}
 
         Fields   =   Links[1] .* circshift(Links[2], [-1, 0]) .* circshift(conj.(Links[1]), [0, -1]) .* conj.(Links[2])
@@ -66,13 +66,13 @@ module Chern
     end
 
 
-    @doc """
-    ```julia
-    ChernNumber(Ham::Hamiltonian, subset::Vector{Int64}) --> Float64
-    ```
-    Function to get Chern numbers given a `Hamiltonian` and a `subset` of bands
+@doc """
+```julia
+ChernNumber(Ham::Hamiltonian, subset::Vector{Int64}) --> Float64
+```
+Function to get Chern numbers given a `Hamiltonian` and a `subset` of bands
 
-    """
+"""
     function ChernNumber(Ham::Hamiltonian, subset::Vector{Int64} ; check_validity::Bool = false)::Float64
 
         if check_validity
