@@ -48,7 +48,7 @@ You can either input a filling, or a chemical potential. The corresponding μ fo
         Gk      ::  Array{Matrix{ComplexF64}}
         Gr      ::  Array{Matrix{ComplexF64}}
         
-        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, 0.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
+        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, -999.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
         ##### Chosen the default value of filling to be -1 which is unphysical so that the code knows when filling has not been provided and has to be calculated from mu instead!
     end
 
@@ -62,6 +62,10 @@ Find filling at given `T`=temperature and `mu`=chemical potential, for a given `
 """
     function FindFilling( mu::Float64, bands::Vector{Float64}, T::Float64, stat::Int64=-1) :: Float64
         return sum(DistFunction(bands; T=T, mu=mu, stat=stat)) / length(bands)
+    end
+
+    function FindFilling( mu::Float64, bands::Array{Vector{Float64}, S}, T::Float64, stat::Int64) :: Float64 where {S}
+        return sum(sum(DistFunction.(bands; T=T, mu=mu, stat=stat))) / sum(length.(bands))
     end
 
 
@@ -78,7 +82,7 @@ Function to get chemical potential for a given `Model`, within a tolerance.
             energies  =   sort(reduce(vcat, M.Ham.bands))
             M.mu      =   (energies[floor(Int64, length(energies)*M.filling)] + energies[floor(Int64, length(energies)*M.filling)+1])/2
         else
-            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (reduce(vcat, M.Ham.bands), M.T, M.stat) ; x_tol=mu_tol, target_tol = filling_tol)
+            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M.Ham.bands, M.T, M.stat) ; x_tol=mu_tol, target_tol = filling_tol)
             @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
         end
     end
@@ -96,7 +100,7 @@ Find filling for a given `Model`.
             energies    =   sort(reduce(vcat, M.Ham.bands))
             M.filling   =   searchsortedlast(energies, M.mu) / length(energies)
         else
-            M.filling   =   FindFilling( M.mu, reduce(vcat, M.Ham.bands), M.T, M.stat)
+            M.filling   =   FindFilling( M.mu, M.Ham.bands, M.T, M.stat)
         end
     end
 
@@ -148,7 +152,7 @@ SolveModel!(M::Model)
 one-step function to find all the attributes in Model after it has been initialized.
 
 """
-    function SolveModel!(M::Model ; get_correlations::Bool = true, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
+    function SolveModel!(M::Model ; get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==false "BdG Hamiltonians should be solved using a BdGModel"
 
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
@@ -157,8 +161,11 @@ one-step function to find all the attributes in Model after it has been initiali
             GetMu!(M ; mu_tol = mu_tol, filling_tol = filling_tol)
         end
 
-        energies  =   sort(reduce(vcat, M.Ham.bands))
-        M.gap     =   energies[floor(Int64, length(energies)*M.filling) + 1] - energies[floor(Int64, length(energies)*M.filling)]
+        if get_gap
+
+            energies  =   sort(reduce(vcat, M.Ham.bands))
+            M.gap     =   energies[floor(Int64, length(energies)*M.filling) + 1] - energies[floor(Int64, length(energies)*M.filling)]
+        end
     
         if get_correlations
             GetGk!(M)

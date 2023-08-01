@@ -169,7 +169,7 @@ SolveModel!(M::BdGModel)
 ```
 one-step function to find all the attributes in  BdGModel after it has been initialized.
 """
-    function SolveModel!(M::BdGModel ; get_correlations::Bool = true, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
+    function SolveModel!(M::BdGModel ; get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==true "Use other format for pure hopping Hamiltonian"
 
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
@@ -178,8 +178,11 @@ one-step function to find all the attributes in  BdGModel after it has been init
             GetMu!(M ; mu_tol = mu_tol, filling_tol = filling_tol)
         end
 
-        energies    =   sort(reduce(vcat, M.Ham.bands))
-        M.gap     =   energies[floor(Int64, length(energies)*M.filling) + 1] - energies[floor(Int64, length(energies)*M.filling)]
+        if get_gap
+
+            energies    =   sort(reduce(vcat, M.Ham.bands))
+            M.gap       =   energies[min(floor(Int64, length(energies)*M.filling) + 1, length(energies))] - energies[floor(Int64, length(energies)*M.filling)]
+        end
 
         if get_correlations
             GetGk!(M)
