@@ -2,10 +2,10 @@ module TightBindingToolkit
 
 ####### Write your package code here.
 
-##### Module to get SU(2) representation for any half-integer / integer spin.
+##### Module to get SU(2) representation for any half-integer / integer spin. Also have a function to return traceless matrix basis for Hermitian NxN matrices.
 include("SpinMats.jl")
 using .SpinMatrices
-export SpinMats
+export SpinMats, HermitianBasis
 
 include("Useful.jl")
 using .Useful
