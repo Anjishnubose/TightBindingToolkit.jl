@@ -17,7 +17,7 @@ Pkg.add("TightBindingToolkit")
 
 ## Features
 Currently supported :
-* Custom Unit Cell Construction. (v1.3) : now also supports construction in dimensions upto d=3.
+* Custom Unit Cell Construction. (v1.3) : now also supports construction in dimensions upto d=3. Can change primitives, or expand unit cell on the go.
     |![Alt text](./docs/src/Figures/Honeycomb_123NN_UC.png)|
     |:--:| 
     |*Honeycomb Model with 1st, 2nd and 3rd neighbour hoppings.*|
@@ -39,8 +39,8 @@ Currently supported :
     |![Alt text](./docs/src/Figures/Triangle_123NN_FS.png)|
     |:--:| 
     |*Fermi surface for a triangular lattice with 1st, 2nd and 3rd neighbour hopping.*|
-* Getting correlation functions. (v1.3) : also supported for BdG systems.
-* Getting Berry curvature and Chern numbers.
+* Getting correlation functionsin momentum space and real space. (v1.3) : also supported for BdG systems.
+* Getting Berry curvature and Chern numbers. Also workjs for topological superconductors.
     |![Alt text](./docs/src/Figures/Haldane_Chern.png)|
     |:--:| 
     |*Chern numbers in a spin-ful Haldane model as a function of t2.*|
@@ -48,6 +48,7 @@ Currently supported :
     |![Alt text](./docs/src/Figures/Triangle_123NN_chi.png)|
     |:--:| 
     |*imaginary part of zero-energy susceptibility for a triangular lattice with 1st, 2nd and 3rd neighbour hopping.*|
+* Real-sapce lattice construction with arbitrary boundary condition. (v2.1)
 
 ## Documentation
 For more details, please see [Documentation](https://anjishnubose.github.io/TightBindingToolkit.jl/dev/)
