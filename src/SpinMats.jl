@@ -1,5 +1,5 @@
 module SpinMatrices
-    export SpinMats
+    export SpinMats, HermitianBasis
 
     using LinearAlgebra
 
@@ -32,6 +32,43 @@ Returns the 3 generators of SU(2) in the given spin-representation, along with t
 
         return [Sx, Sy, Sz, S4]
 
+    end
+
+
+@doc """
+```julia
+HermitianBasis(localDim::Int64) --> Vector{Matrix{ComplexF64}}
+```
+Returns a vector basis of Traceless, localDim x localDim, Hermitian matrices, normalized such that `` Tr(T^{a †} . T^{b}) = (1/2)δ_{ab} ``, along with the identity. 
+
+"""
+    function HermitianBasis(localDim::Int64) :: Vector{Matrix{ComplexF64}}
+
+        basis   =   [zeros(ComplexF64, localDim, localDim) for i in 1:localDim^2]
+        count   =   1
+
+        for i in 2:localDim
+            for j in 1:i-1
+                for phase in 1:2
+
+                    basis[count][i, j]  =   Bool(mod(count-1, 2)) ? 0.5 * im : 0.5 + 0.0 * im
+                    basis[count][j, i]  =   conj(basis[count][i, j])
+
+                    count   +=  1
+                end
+            end
+        end
+
+        for i in 1:localDim - 1
+            diag            =   vcat( ones(ComplexF64, i), -i * ones(ComplexF64, 1), zeros(ComplexF64, localDim - i - 1))
+            basis[count]    =   diagm(diag) / sqrt(2 * i * (i+1))
+
+            count   +=  1
+        end
+
+        basis[count]    =   Matrix{ComplexF64}(I, localDim, localDim)
+
+        return basis
     end
 
 end
