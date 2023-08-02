@@ -17,9 +17,18 @@ CreateLattice(uc::UnitCell{T}, params::Vector{Param{T}}, size::Vector{Int64} , i
 Creates a lattice using `Param` objetcs given in `params`.
 
 """
-    function CreateLattice(uc::UnitCell{T}, param::Param{T}, size::Vector{Int64} ; index::Int64=length(param.value), null_dist::Float64 = -1.0, null_label::String = "-") :: Lattice{T} where {T}
+    function CreateLattice(uc::UnitCell{T}, param::Param{T, R}, size::Vector{Int64} ; index::Int64=length(param.value), null_dist::Float64 = -1.0, null_label::String = "-") :: Lattice{T} where {T, R}
 
         CreateUnitCell!(uc, param, index)
+        lattice     =   Lattice(uc, size ; null_dist = null_dist, null_label = null_label)
+        FillLattice!(lattice)
+
+        return lattice
+    end
+
+    function CreateLattice(uc::UnitCell{T}, params::Vector{Param{T, R}}, size::Vector{Int64} ; null_dist::Float64 = -1.0, null_label::String = "-") :: Lattice{T} where {T, R}
+
+        CreateUnitCell!(uc, params)
         lattice     =   Lattice(uc, size ; null_dist = null_dist, null_label = null_label)
         FillLattice!(lattice)
 
@@ -44,9 +53,15 @@ ModifyLattice!(lattice::Lattice{T}, params::Vector{Param{T}}) where {T}
 Modifies a lattice when the `Param` objects given in `params` are modified.
 
 """
-    function ModifyLattice!(lattice::Lattice{T}, param::Param{T}) where {T}
+    function ModifyLattice!(lattice::Lattice{T}, param::Param{T, R}) where {T, R}
 
         ModifyUnitCell!(lattice.uc, param)
+        FillBonds!(lattice)
+    end
+
+    function ModifyLattice!(lattice::Lattice{T}, params::Vector{Param{T, R}} ) where {T, R}
+
+        ModifyUnitCell!(lattice.uc, params)
         FillBonds!(lattice)
     end
 
@@ -79,10 +94,15 @@ ScaleLattice!(lattice::Lattice{T}, params::Vector{Param{T}}) where {T}
 Scales a lattice bond assuming that the `Param` objects got their strengths modified.
 
 """
-    function ScaleLattice!(lattice::Lattice{T}, param::Param{T}) where {T}
+    function ScaleLattice!(lattice::Lattice{T}, param::Param{T, R}) where {T, R}
         scaling     =   param.value[end] / param.value[end - 1]
         ScaleLatticeBonds!(lattice, param.label, scaling )
 
+    end
+
+    function ScaleLattice!(lattice::Lattice{T}, params::Vector{Param{T, R}}) where {T, R}
+
+        ScaleLattice!.(Ref(lattice), params)
     end
 
     function ScaleLattice!(lattice::Lattice{T}, params::Vector{Param{T}}) where {T}
