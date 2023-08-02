@@ -31,7 +31,8 @@ Returns the hopping Hamiltonian at momentum point `k`, corresponding to the bond
             b2  =   uc.localDim * (bond.target - 1) + 1
             
             if b1==b2 && bond.offset==zeros(length(uc.basis))
-                H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   bond.mat
+                H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   (bond.mat + bond.mat') / 2
+
             else
                 H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=    exp( im .* dot(k, sum(bond.offset .* uc.primitives))) .* bond.mat
                 H[b2 : b2 + uc.localDim - 1, b1 : b1 + uc.localDim - 1]  .+=    exp(-im .* dot(k, sum(bond.offset .* uc.primitives))) .* bond.mat' 
@@ -57,13 +58,8 @@ Returns the pairing Hamiltonian at momentum point `k`, corresponding to the bond
             b1  =   uc.localDim * (bond.base - 1) + 1
             b2  =   uc.localDim * (bond.target - 1) + 1
             
-            if b1==b2 && bond.offset==zeros(length(uc.basis))
-                @assert norm(diag(bond.mat))<1e-3 "Invalid pairing"
-                H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   bond.mat
-    
-            else
-                H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   exp( im .* dot(k, sum(bond.offset .* uc.primitives))) .* bond.mat
-            end 
+            H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   exp( im .* dot(k, sum(bond.offset .* uc.primitives))) .* bond.mat
+
         end
     
         return H
