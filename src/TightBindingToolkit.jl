@@ -51,12 +51,12 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
 ##### Module to define a Tight-Binding Model structure which takes into account thermodynamical parameters such as temperature and filling etc.
 include("Model.jl")
 using .TBModel
-export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, FreeEnergy
+export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy
 
 ##### Module to define the equivalent but for bdG systems with pairing.
 include("BdGModel.jl")
 using .BdG
-export BdGModel, FindFilling , GetMu! , GetFilling! , GetGk! , GetGr!, SolveModel!, FreeEnergy
+export BdGModel, FindFilling , GetMu! , GetFilling! , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy
 
 ##### Module to calculate generalized Chern numbers
 include("Chern.jl")
