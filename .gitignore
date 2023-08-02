@@ -4,3 +4,8 @@
 *.jld2
 *.dat
 *.npz
+Sample/Honeycomb_KaneMele.jl
+Sample/HoneycombKekule.jl
+Sample/SimpleTightBindingWith12Unitcells.jl
+Sample/SquareNeel.jl
+Sample/TriangularLattice.jl
