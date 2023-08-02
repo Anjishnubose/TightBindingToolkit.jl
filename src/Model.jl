@@ -1,6 +1,6 @@
 module TBModel
 
-    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, FreeEnergy
+    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy
 
     using ..TightBindingToolkit.Useful: Meshgrid, DistFunction, DeriDistFunction, FFTArrayofMatrix, BinarySearch
     using ..TightBindingToolkit.UCell:UnitCell
@@ -164,7 +164,7 @@ one-step function to find all the attributes in Model after it has been initiali
         if get_gap
 
             energies  =   sort(reduce(vcat, M.Ham.bands))
-            M.gap     =   energies[floor(Int64, length(energies)*M.filling) + 1] - energies[floor(Int64, length(energies)*M.filling)]
+            M.gap     =   energies[min(floor(Int64, length(energies)*M.filling) + 1, length(energies))] - energies[floor(Int64, length(energies)*M.filling)]
         end
     
         if get_correlations
@@ -175,6 +175,19 @@ one-step function to find all the attributes in Model after it has been initiali
         if verbose
             @info "System Filled!"
         end
+    end
+
+
+@doc """
+```julia
+GetGap!(M::BdGModel)
+```
+Calculate the BdG gap of the system.
+"""
+    function GetGap!(M::Model)
+        energies    =   sort(reduce(vcat, M.Ham.bands))
+        M.gap       =   energies[min(floor(Int64, length(energies)*M.filling) + 1, length(energies))] - energies[floor(Int64, length(energies)*M.filling)]
+
     end
 
 

@@ -1,5 +1,5 @@
 module BdG
-    export BdGModel, FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, FreeEnergy
+    export BdGModel, FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, GetGap!, FreeEnergy
 
     using ..TightBindingToolkit.Useful: DistFunction, DeriDistFunction, BinarySearch, FFTArrayofMatrix
     using ..TightBindingToolkit.UCell: UnitCell
@@ -9,7 +9,7 @@ module BdG
     
     using LinearAlgebra, Tullio, TensorCast, Logging
 
-    import ..TightBindingToolkit.TBModel:FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, FreeEnergy
+    import ..TightBindingToolkit.TBModel:FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, GetGap!, FreeEnergy
 
 @doc """
     `BdGModel` is a data type representing a general Tight Binding system with pairing.
@@ -54,7 +54,7 @@ module BdG
         Gr      ::  Array{Matrix{ComplexF64}}
         Fr      ::  Array{Matrix{ComplexF64}}
         
-        BdGModel(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc_hop, uc_pair, bz, Ham, T, filling, mu, 0.0, stat ,Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...),Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...))
+        BdGModel(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc_hop, uc_pair, bz, Ham, T, filling, mu, -999.0, stat ,Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...),Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc_hop.primitives))...))
         ##### Chosen the default value of filling to be -1 which is unphysical so that the code knows when filling has not been provided and has to be calculated from mu instead!
     end
 
@@ -181,7 +181,7 @@ one-step function to find all the attributes in  BdGModel after it has been init
         if get_gap
 
             energies    =   sort(reduce(vcat, M.Ham.bands))
-            M.gap       =   energies[min(floor(Int64, length(energies)*M.filling) + 1, length(energies))] - energies[floor(Int64, length(energies)*M.filling)]
+            M.gap       =   energies[min(floor(Int64, length(energies)*0.5) + 1, length(energies))] - energies[floor(Int64, length(energies)*0.5)]
         end
 
         if get_correlations
@@ -192,6 +192,19 @@ one-step function to find all the attributes in  BdGModel after it has been init
         if verbose
             @info "System Filled!"
         end
+    end
+
+
+@doc """
+```julia
+GetGap!(M::BdGModel)
+```
+Calculate the BdG gap of the system.
+"""
+    function GetGap!(M::BdGModel)
+        energies    =   sort(reduce(vcat, M.Ham.bands))
+        M.gap       =   energies[min(floor(Int64, length(energies)*0.5) + 1, length(energies))] - energies[floor(Int64, length(energies)*0.5)]
+
     end
 
 
