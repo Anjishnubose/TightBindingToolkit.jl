@@ -155,6 +155,7 @@ Add a sublattice to the `UnitCell`  at the given real-space position, with an on
 		push!( uc.fields , field )
 
 		if length(uc.basis) == 1 ##### First sublattice being added
+			@assert adjoint.(OnSiteMatrices) == OnSiteMatrices "on-Site matrices must be Hermitian!"
 			uc.OnSiteMats 	=	OnSiteMatrices
 		else
 			@assert uc.OnSiteMats == OnSiteMatrices "Inconsistent On-Site Matrices given!"

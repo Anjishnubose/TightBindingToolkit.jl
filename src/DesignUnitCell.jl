@@ -15,23 +15,7 @@ AddAnisotropicBond!( uc::UnitCell , base::Int64 , target::Int64 , offset::Vector
 Add a bond with the given attributes to `UnitCell`.
 If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 
-"""
-	function AddAnisotropicBond!( uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T}
-	
-		@assert uc.localDim == 1 "Passing a scalar to a bond is only possible if localDim of UnitCell is 1"
-		dims 	=	repeat([uc.localDim], T)
-	
-		if base <= length(uc.basis) && target <= length(uc.basis)
-			if norm( sum(offset .* uc.primitives) .+ (uc.basis[target] .- uc.basis[base] ) ) ≈ dist
-				push!( uc.bonds , Bond( base , target , offset , ComplexF64.(reshape([mat], dims...)) , dist, label ) )
-			else 
-				@warn "Inconsistency in bond with label $label" 
-			end
-		else
-			@warn "One or both of basis sites ($base, $target) have not been added to the UnitCell object."
-		end
-	end
-	
+"""	
 	function AddAnisotropicBond!( uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Array{<:Number, T} , dist::Float64, label::String ) where {T}
 
 		dims 	=	repeat([uc.localDim], T)
@@ -48,39 +32,26 @@ If given `mat` attribute is a number, it is converted into a 1x1 matrix when ent
 		end
 	end
 
+	function AddAnisotropicBond!( uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T}
+	
+		@assert uc.localDim == 1 "Passing a scalar to a bond is only possible if localDim of UnitCell is 1"
+		dims 	=	repeat([uc.localDim], T)
+	
+		AddAnisotropicBond!( uc, base, target, offset, ComplexF64.(reshape([mat], dims...)), dist, label)
+	end
+
 
 @doc raw"""
 ```julia
-AddIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
-AddIsotropicBonds!( uc::UnitCell , dist::Float64 , mats::Matrix{<:Number} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
+AddIsotropicBonds!( uc::UnitCell{T} , dist::Float64 , mats::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)))
+AddIsotropicBonds!( uc::UnitCell{T} , dist::Float64 , mats::Array{<:Number, T} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) )
 ```
 Add a set of "isotropic" bonds, which are the same for each pair of sites at the given distance. 
 If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 The input `checkOffsetRange` must be adjusted depending on the input distance. 
 The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
 
-"""
-	function AddIsotropicBonds!( uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T}
-
-		@assert uc.localDim == 1 "Passing a scalar to a bond is only possible if localDim of UnitCell is 1"
-		dims 	        =	repeat([uc.localDim], T)
-		offsets 		=	GetAllOffsets(checkOffsetRange, length(uc.primitives))    
-	
-		for i in subs
-			for j in subs
-				for offset in offsets
-					if norm( sum( offset.*uc.primitives ) + (uc.basis[j] - uc.basis[i] ) ) ≈ dist
-						proposal 	=	Bond(i, j, offset, ComplexF64.(reshape([mat], dims...)), dist, label)
-						if sum(IsSameBond.( Ref(proposal) , uc.bonds ))==0
-							push!( uc.bonds , proposal )
-						end
-					end
-				end
-	
-			end
-		end
-	end
-	
+"""	
 	function AddIsotropicBonds!( uc::UnitCell{T} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T}
 
 		dims 	=	repeat([uc.localDim], T)
@@ -100,6 +71,14 @@ The optional input `subs` is meant for isotropic bonds when only a subset of sub
 	
 			end
 		end
+	end
+
+	function AddIsotropicBonds!( uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T}
+
+		@assert uc.localDim == 1 "Passing a scalar to a bond is only possible if localDim of UnitCell is 1"
+		dims 	        =	repeat([uc.localDim], T)
+		
+		AddIsotropicBonds!( uc, dist, ComplexF64.(reshape([mat], dims...)), label; checkOffsetRange = checkOffsetRange, subs = subs )
 	end
 
 
@@ -225,7 +204,8 @@ If there are multiple bonds with the same identifier, it adds them up.
 				lookupTable[identifier] 	=	lookupTable[identifier] + bond.mat
 
 			elseif haskey(lookupTable, (bond.target, bond.base, -bond.offset))
-				##### TODO: Fix for arrays, when bond rank >2
+				##### ///TODO: Fix for arrays, when bond rank >2
+				##### TODO : TEST
 				flippedIndices 	=	collect(T:-1:1)
 				lookupTable[(bond.target, bond.base, -bond.offset)] 	=	lookupTable[(bond.target, bond.base, -bond.offset)] + collect(conj.(permutedims(bond.mat, flippedIndices)))
 
