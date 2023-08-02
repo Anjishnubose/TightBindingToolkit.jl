@@ -24,19 +24,19 @@ Param( value::Float64 , rank::Int64 )
 ```
 
 """
-    mutable struct Param{T}  
-        value       ::  Vector{Float64}
+    mutable struct Param{T, R}  
+        value       ::  Vector{R}
         unitBonds   ::  Vector{Bond{T}} 
         label       ::  String
         dist        ::  Float64
     
-        function Param( value::Float64 ) 
+        function Param( value::R ) where {R<:Number}
             @warn "Rank not passed to Param object. Choosing default value of 2!"
-            return new{2}( [value] , Bond{2}[], "", -1.0 )
+            return new{2, R}( R[value] , Bond{2}[], "", -1.0 )
         end
     
-        function Param( value::Float64, rank::Int64 ) 
-            return new{rank}( [value] , Bond{rank}[], "", -1.0 )
+        function Param( value::R, rank::Int64 ) where {R<:Number}
+            return new{rank, R}( R[value] , Bond{rank}[], "", -1.0 )
         end    
     end 
 
@@ -50,30 +50,7 @@ Add a bond with the given attributes to `param`.
 If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 
 """
-    function AddAnisotropicBond!( param::Param{T}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T}
-	
-        @assert uc.localDim == 1
-        dims 	=	repeat([uc.localDim], T)
-    
-        if base <= length(uc.basis) && target <= length(uc.basis)
-            if norm( sum(offset .* uc.primitives) .+ (uc.basis[target] .- uc.basis[base] ) ) ≈ dist
-                push!( param.unitBonds , Bond( base , target , offset , ComplexF64.(reshape([mat], dims...)) , dist, label ) )
-
-                if param.label==""
-                    param.label     =   label
-                    param.dist      =   dist
-                else
-                    @assert param.label == label && param.dist == dist "Inconsistent label or distance given"
-                end
-            else
-                @warn "Issue with bond between $(base) and $(target) at distance $(dist)"
-            end
-        else
-            @warn "One or both of those basis sites, [$(base), $(target)] have not been added to the UnitCell object."
-        end
-    end
-    
-    function AddAnisotropicBond!( param::Param{T}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Array{<:Number, T} , dist::Float64, label::String ) where {T}
+    function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Array{<:Number, T} , dist::Float64, label::String ) where {T, R}
 
         dims 	=	repeat([uc.localDim], T)
         @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
@@ -95,6 +72,14 @@ If given `mat` attribute is a number, it is converted into a 1x1 matrix when ent
             @warn "One or both of those basis sites, [$(base), $(target)] have not been added to the UnitCell object."
         end
     end
+    
+    function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T, R}
+	
+        @assert uc.localDim == 1
+        dims 	=	repeat([uc.localDim], T)
+    
+        AddAnisotropicBond!( param, uc, base, target, offset, ComplexF64.(reshape([mat], dims...)), dist, label)
+    end
 
 
 @doc """
@@ -107,38 +92,8 @@ If given `mat` attribute is a number, it is converted into a 1x1 matrix when ent
 The input `checkOffsetRange` must be adjusted depending on the input distance. 
 The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
 
-"""
-    function AddIsotropicBonds!( param::Param{T}, uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T}
-
-        @assert uc.localDim == 1
-        dims 	=	repeat([uc.localDim], T)
-        offsets =	GetAllOffsets(checkOffsetRange, length(uc.primitives))    
-    
-        for i in subs
-            for j in subs
-                for offset in offsets
-
-                    if norm( sum( offset.*uc.primitives ) + (uc.basis[j] - uc.basis[i] ) ) ≈ dist
-                        proposal 	=	Bond(i, j, offset, ComplexF64.(reshape([mat], dims...)), dist, label)
-
-                        if sum(IsSameBond.( Ref(proposal) , param.unitBonds ))==0
-                            push!( param.unitBonds , proposal )
-    
-                            if param.label==""
-                                param.label     =   label
-                                param.dist      =   dist
-                            else
-                                @assert param.label == label && param.dist == dist "Inconsistent label or distance given"
-                            end
-                        end
-                    end
-                end
-    
-            end
-        end
-    end
-    
-    function AddIsotropicBonds!( param::Param{T}, uc::UnitCell{T} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T}
+"""    
+    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T, R}
     
         dims 	=	repeat([uc.localDim], T)
         @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
@@ -168,6 +123,14 @@ The optional input `subs` is meant for isotropic bonds when only a subset of sub
         end
     end
 
+    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T, R}
+
+        @assert uc.localDim == 1
+        dims 	=	repeat([uc.localDim], T)
+        
+        AddIsotropicBonds!( param, uc, dist, ComplexF64.(reshape([mat], dims...)), label; checkOffsetRange = checkOffsetRange , subs = subs)
+    end
+
 
 @doc """
 ```julia
@@ -177,12 +140,17 @@ CreateUnitCell!(uc::UnitCell, params::Vector{Param}, indices::Vector{Int64}=leng
 Add bonds corrsponding to a `param` to `UnitCell`, scaled with the `param.value[index]`. Also includes the broadcasted call.
 
 """
-    function CreateUnitCell!(uc::UnitCell{T}, param::Param{T} , index::Int64=length(param.value)) where {T}
+    function CreateUnitCell!(uc::UnitCell{T}, param::Param{T, R} , index::Int64=length(param.value)) where {T, R}
         bonds   =   deepcopy(param.unitBonds)
         map(x -> x.mat = param.value[index] * x.mat, bonds)
         append!(uc.bonds, bonds)
-        ##### TODO: Check this works properly!!!
+        ##### ///TODO: Check this works properly!!!
 
+    end
+
+    function CreateUnitCell!(uc::UnitCell{T}, params::Vector{Param{T, R}}, indices::Vector{Int64}=length.(getproperty.(params, :value))) where {T, R}
+        @assert length(indices)==length(params) "Inconsistent input of params"
+        CreateUnitCell!.(Ref(uc), params, indices)
     end
 
     function CreateUnitCell!(uc::UnitCell{T}, params::Vector{Param{T}}, indices::Vector{Int64}=length.(getproperty.(params, :value))) where {T}
@@ -199,10 +167,15 @@ ModifyUnitCell!(uc::UnitCell, params::Vector{Param})
 Modify all bonds in `UnitCell` corresponding to given `param`, taking the latest value in `param.value`. 
 
 """
-    function ModifyUnitCell!(uc::UnitCell{T}, param::Param{T}) where {T}
+    function ModifyUnitCell!(uc::UnitCell{T}, param::Param{T, R}) where {T, R}
 
         RemoveBonds!(uc, param.label)
         CreateUnitCell!(uc, param)
+    end
+
+    function ModifyUnitCell!(uc::UnitCell{T}, params::Vector{Param{T, R}}) where {T, R}
+        
+        ModifyUnitCell!.(Ref(uc), params)
     end
 
     function ModifyUnitCell!(uc::UnitCell{T}, params::Vector{Param{T}}) where {T}
