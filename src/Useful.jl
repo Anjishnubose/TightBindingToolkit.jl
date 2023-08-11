@@ -1,5 +1,5 @@
 module Useful
-    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix
+    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy
 
     using LinearAlgebra, Statistics, FFTW, TensorCast
 
@@ -103,7 +103,12 @@ derivative of [`dist`](@ref) w.r.t the energy. `stat`=1 --> Bose-Einstein distri
 
 """
     function DeriDistFunction(E ; T::Float64, mu::Float64=0.0, stat::Int64=-1)
-        return @. - (1/T) * exp((E - mu) / T) / ((exp((E - mu) / T) - stat) ^ 2)
+        df  =   @. - (1/T) * exp((E - mu) / T) / ((exp((E - mu) / T) - stat) ^ 2)
+        if isnan(df)
+            df  =   0.0
+        end
+
+        return df 
     end
 
 
@@ -135,6 +140,25 @@ Works in any dimensions.
     end
 
 
+    function Arrayfy(A::Array{Matrix{T}, N}) :: Array{T, 3} where {T<:Number, N}
+
+        grid    =   size(A)
+
+        G       =   reshape(A, prod(grid))       ##### Flattening all super-indices for casting 
+        @cast G[k, i, j] |= G[k][i, j] 
+        
+        return G
+    end
+
+
+    function DeArrayfy(A::Array{T, 3}, grid::Vector{Int64}) :: Array{Matrix{T}, length(grid)} where {T<:Number}
+
+        @cast G[k][i, j] |= A[k, i, j]
+        G   =   reshape(G, grid...)
+        
+        return G
+    end
+
     function FFTArrayofMatrix(Gs::Array{Matrix{ComplexF64}, T}) where {T}
 
         N       =   size(Gs[begin])      ##### size of the matrix being FFTed
@@ -151,6 +175,75 @@ Works in any dimensions.
         Gr    =   reshape(Gr, grid...) / prod(grid)
 
         return Gr
+    end
+
+
+@doc """
+f : Can be an array of anything (even static arrays)
+delta : vector of real numbers with length = spatial dimensions = rank of f ---> the displacement vector when calculating the gradient
+PBC   : vector of boolean with length = spatial dimensions = rank of f ---> if the ith dimension has PBC or not.
+
+"""
+    function Central_Diff(f::Array{Any} ;  delta::Vector{Float64} = ones(Float64, length(size(f))), PBC::Vector{Bool} = repeat([true], length(size(f))))
+        dims    =   length(size(f))
+        IdMat   =   Matrix(1I, dims, dims)  ##### Identity matrix of size dims x dims where dims = rank of f = "spatial "dimensions. Eg in 3d f=f(x, y, z) = f[ix, iy, iz] => dims=3
+        f_plus  =   circshift.(Ref(f), eachrow(IdMat))  
+        """ circshift(f, v) shifts the array indices of f by a vector v. 
+            eachrow(IdMat) basically gives [1, 0, ..., 0], [0, 1, 0, ..., 0] and so on.
+            f_plus is a vector of arrays of same dimensions as f s.t. f_plus[i] is f shifted by one index to the right along the ith dimension""" 
+        f_minus =   circshift.(Ref(f), eachrow(-IdMat))
+        """ f_minus is a vector of arrays of same dimensions as f s.t. f_minus[i] is f shifted by one index to the left along the ith dimension""" 
+        diff    =   (f_minus .- f_plus) ./ (2*delta)
+        """ diff is another vector of arrays of same dimensions as f.
+            diff[i][ix1,..., ixn] = d/dx^i(f)(ix1, ..., ixn)"""
+        
+    
+        for i in 1:dims
+            if !PBC[i]
+                """
+                selectdim(x, i, ind) = x[:, :, ..., ind, :, ..., :] where ind is in the ith dimension
+                the relevant boundary for d/dx^i is ind=1, end for the ith dimension
+                For such cases, instead of f_plus-f_minus, we need f_plus-f, and f-f_minus
+                """
+                left_edge    =   selectdim(diff[i], i, 1)
+                left_edge   .=   (selectdim(f_minus[i], i, 1) .- selectdim(f, i, 1)) ./ delta[i]   ##### Pointer black magic???
+                right_edge   =   selectdim(diff[i], i, size(f)[i])
+                right_edge  .=   (selectdim(f, i, size(f)[i]) .- selectdim(f_plus[i], i, size(f)[i])) ./ delta[i] 
+            end
+        end
+    
+        return diff
+    end
+
+    function Central_Diff(f::Array{T, N} ;  delta::Vector{Float64} = ones(Float64, length(size(f))), PBC::Vector{Bool} = repeat([true], length(size(f)))) where {T<:Union{Number, Vector{<:Number}, Matrix{<:Number}}, N}
+        dims    =   length(size(f))
+        IdMat   =   Matrix(1I, dims, dims)  ##### Identity matrix of size dims x dims where dims = rank of f = "spatial "dimensions. Eg in 3d f=f(x, y, z) = f[ix, iy, iz] => dims=3
+        f_plus  =   circshift.(Ref(f), eachrow(IdMat))  
+        """ circshift(f, v) shifts the array indices of f by a vector v. 
+            eachrow(IdMat) basically gives [1, 0, ..., 0], [0, 1, 0, ..., 0] and so on.
+            f_plus is a vector of arrays of same dimensions as f s.t. f_plus[i] is f shifted by one index to the right along the ith dimension""" 
+        f_minus =   circshift.(Ref(f), eachrow(-IdMat))
+        """ f_minus is a vector of arrays of same dimensions as f s.t. f_minus[i] is f shifted by one index to the left along the ith dimension""" 
+        diff    =   (f_minus .- f_plus) ./ (2*delta)
+        """ diff is another vector of arrays of same dimensions as f.
+            diff[i][ix1,..., ixn] = d/dx^i(f)(ix1, ..., ixn)"""
+        
+    
+        for i in 1:dims
+            if !PBC[i]
+                """
+                selectdim(x, i, ind) = x[:, :, ..., ind, :, ..., :] where ind is in the ith dimension
+                the relevant boundary for d/dx^i is ind=1, end for the ith dimension
+                For such cases, instead of f_plus-f_minus, we need f_plus-f, and f-f_minus
+                """
+                left_edge    =   selectdim(diff[i], i, 1)
+                left_edge   .=   (selectdim(f_minus[i], i, 1) .- selectdim(f, i, 1)) ./ delta[i]   ##### Pointer black magic???
+                right_edge   =   selectdim(diff[i], i, size(f)[i])
+                right_edge  .=   (selectdim(f, i, size(f)[i]) .- selectdim(f_plus[i], i, size(f)[i])) ./ delta[i] 
+            end
+        end
+    
+        return diff
     end
 
 
