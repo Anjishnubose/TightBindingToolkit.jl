@@ -9,3 +9,5 @@ Sample/HoneycombKekule.jl
 Sample/SimpleTightBindingWith12Unitcells.jl
 Sample/SquareNeel.jl
 Sample/TriangularLattice.jl
+Sample/Honeycomb_t1t3_thermal.jl
+
