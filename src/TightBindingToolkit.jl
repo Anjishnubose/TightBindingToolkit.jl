@@ -9,7 +9,7 @@ export SpinMats, HermitianBasis
 
 include("Useful.jl")
 using .Useful
-export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix
+export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix #, Central_Diff, Arrayfy, DeArrayfy
 
 ##### Module for defining Unit Cell structure and some funcitons to manipulate it.
 include("UnitCell.jl")
@@ -46,12 +46,12 @@ export GetRLVs , BZ , Monkhorst , FillBZ! , ReduceQ , GetQIndex , CombinedIndexP
 ##### module to define a Hamiltonian structure and solving for some of its properties.
 include("Hamiltonian.jl")
 using .Hams
-export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, IsBandGapped
+export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, IsBandGapped, GetVelocity!
 
 ##### Module to define a Tight-Binding Model structure which takes into account thermodynamical parameters such as temperature and filling etc.
 include("Model.jl")
 using .TBModel
-export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy
+export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy, GetOrderParameter
 
 ##### Module to define the equivalent but for bdG systems with pairing.
 include("BdGModel.jl")
@@ -67,6 +67,11 @@ export FindLinks , FieldStrength , ChernNumber, CheckValidity
 include("Susceptibility.jl")
 using .suscep
 export Susceptibility , FindChi , FillChis!
+
+##### Module to calculate generalized electrical conductivity
+include("Conductivity.jl")
+using .conduct
+export Conductivity, SpectralFunction, SpectralContribution, GetConductivity!
 
 ##### Module containing some plotting functions
 include("Plot.jl")
