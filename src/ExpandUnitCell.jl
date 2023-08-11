@@ -83,7 +83,7 @@ Returns a UnitCell which is an integer multiple of the given UnitCell (the primi
         for offset in NewOffsets
             for (iBasis, basis) in enumerate(ucOG.basis)
                 b 	=	basis + sum(offset .* ucOG.primitives)
-                AddBasisSite!(ucNew, b, ucOG.fields[iBasis], ucOG.OnSiteMatrices)
+                AddBasisSite!(ucNew, b, ucOG.fields[iBasis], ucOG.OnSiteMats)
             end
         end
 
