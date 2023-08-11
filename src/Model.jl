@@ -1,10 +1,11 @@
 module TBModel
 
-    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy
+    export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy, GetOrderParameter
 
     using ..TightBindingToolkit.Useful: Meshgrid, DistFunction, DeriDistFunction, FFTArrayofMatrix, BinarySearch
-    using ..TightBindingToolkit.UCell:UnitCell
-    using ..TightBindingToolkit.BZone:BZ, MomentumPhaseFFT
+    using ..TightBindingToolkit.UCell: UnitCell, Bond
+    using ..TightBindingToolkit.BZone: BZ, MomentumPhaseFFT
+    using ..TightBindingToolkit.Parameters: Param
     using ..TightBindingToolkit.Hams:Hamiltonian
 
     using LinearAlgebra, Logging
@@ -31,7 +32,7 @@ Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64
 You can either input a filling, or a chemical potential. The corresponding μ for a given filling, or filling for a given μ is automatically calculated.
 """
     mutable struct Model
-        uc      ::  UnitCell
+        uc      ::  UnitCell{2}
         bz      ::  BZ
         Ham     ::  Hamiltonian
         """
@@ -48,7 +49,7 @@ You can either input a filling, or a chemical potential. The corresponding μ fo
         Gk      ::  Array{Matrix{ComplexF64}}
         Gr      ::  Array{Matrix{ComplexF64}}
         
-        Model(uc::UnitCell, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, -999.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
+        Model(uc::UnitCell{2}, bz::BZ, Ham::Hamiltonian ; T::Float64=1e-3, filling::Float64=-1.0, mu::Float64=0.0, stat::Int64=-1) = new{}(uc, bz, Ham, T, filling, mu, stat, -999.0, Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...))
         ##### Chosen the default value of filling to be -1 which is unphysical so that the code knows when filling has not been provided and has to be calculated from mu instead!
     end
 
@@ -205,6 +206,25 @@ Calculate the free energy of the given `Model`.
         F       =   -M.T * (sum(F) / length(F))
 
         return F - F0
+    end
+
+
+    function GetOrderParameter(M::Model, param::Param)
+
+        order   =   Float64[]
+        for bond in param.unitBonds
+
+            index       =   mod.((-bond.offset) , M.bz.gridSize) .+ ones(Int64, length(bond.offset)) 
+            ##### TODO : the extra - sign in offset is because right now G[r] = <f^{dagger}_0 . f_{-r}> ===> NEED TO FIX THIS
+            b1          =   M.uc.localDim * (bond.base   - 1) + 1
+            b2          =   M.uc.localDim * (bond.target - 1) + 1
+            G           =   M.Gr[index...][b1 : b1 + M.uc.localDim - 1, b2 : b2 + M.uc.localDim - 1]
+
+            decomposition   =   (tr( adjoint(bond.mat) * G) / (tr(adjoint(bond.mat) * bond.mat)))
+            push!(order, real(decomposition))
+        end
+
+        order   =   sum(order) / length(order)
     end
 
 end
