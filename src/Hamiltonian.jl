@@ -1,6 +1,7 @@
 module Hams
-    export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, IsBandGapped
+    export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, IsBandGapped, GetVelocity!
 
+    using ..TightBindingToolkit.Useful: Central_Diff, Arrayfy, DeArrayfy
     using ..TightBindingToolkit.SpinMatrices:SpinMats
     using ..TightBindingToolkit.UCell:Bond, UnitCell, IsSameUnitCell
     using ..TightBindingToolkit.DesignUCell: ModifyFields!, ModifyIsotropicFields!
@@ -30,7 +31,7 @@ Returns the hopping Hamiltonian at momentum point `k`, corresponding to the bond
             b1  =   uc.localDim * (bond.base - 1) + 1
             b2  =   uc.localDim * (bond.target - 1) + 1
             
-            if b1==b2 && bond.offset==zeros(length(uc.basis))
+            if b1==b2 && bond.offset==zeros(length(uc.primitives))
                 H[b1 : b1 + uc.localDim - 1, b2 : b2 + uc.localDim - 1]  .+=   (bond.mat + bond.mat') / 2
 
             else
@@ -120,10 +121,11 @@ Hamiltonian(uc_hop::UnitCell, uc_pair::UnitCell, bz::BZ) --> BdG Hamiltonian
         states      ::  Array{Matrix{ComplexF64}}
         bandwidth   ::  Tuple{Float64, Float64}
         is_BdG      ::  Bool
+        velocity    ::  Vector{Array{Matrix{ComplexF64}}}
     
-        Hamiltonian(uc::UnitCell{2}, bz::BZ) = new{}(FillHamiltonian(uc, bz), Array{Vector{Float64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), (0.0, 0.0), false)
+        Hamiltonian(uc::UnitCell{2}, bz::BZ) = new{}(FillHamiltonian(uc, bz), Array{Vector{Float64}}(undef, zeros(Int64, length(uc.primitives))...), Array{Matrix{ComplexF64}}(undef, zeros(Int64, length(uc.primitives))...), (0.0, 0.0), false, Array{Matrix{ComplexF64}, length(uc.primitives)}[])
 
-        Hamiltonian(uc_hop::UnitCell{2}, uc_pair::UnitCell{2}, bz::BZ) = new{}(FillHamiltonian(uc_hop, uc_pair, bz), Array{Vector{Float64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef,zeros(Int64, length(uc_hop.primitives))...), (0.0, 0.0), true)
+        Hamiltonian(uc_hop::UnitCell{2}, uc_pair::UnitCell{2}, bz::BZ) = new{}(FillHamiltonian(uc_hop, uc_pair, bz), Array{Vector{Float64}}(undef, zeros(Int64, length(uc_hop.primitives))...), Array{Matrix{ComplexF64}}(undef,zeros(Int64, length(uc_hop.primitives))...), (0.0, 0.0), true, Array{Matrix{ComplexF64}, length(uc_hop.primitives)}[])
     end
 
 
@@ -162,8 +164,6 @@ Faster implementation of modifying ONLY the on-site field part of a `Hamiltonian
             DiagonalizeHamiltonian!(Ham ; verbose=verbose)
         else
             Ham.H   .+=   Ref(kron(SpinMats(1//2)[3], kron(diagm(getindex.(uc.fields, dim) .- newFields) , uc.OnSiteMats[dim])))  ##### The extra Sz corresponds to the nambu basis.
-            # display(Ham.H[62, 62])
-            # display(kron(SpinMats(1//2)[3], kron(diagm(getindex.(uc.fields, dim) .- newFields) , OnSiteMatrices[dim])))
             DiagonalizeHamiltonian!(Ham ; verbose=verbose)
         end
     
@@ -215,5 +215,23 @@ The calculation is done at a finite `spread` of the delta-function sum.
         dos     .=  dos ./ norm
         return dos
     end
-    
+
+
+    function GetVelocity!(H::Hamiltonian, bz::BZ) :: Vector{typeof(H.H)}
+
+        dH      =   Central_Diff(H.H ; delta = (1 ./ bz.gridSize), PBC = repeat([true], length(bz.gridSize)))
+        dH      =   Arrayfy.(dH)
+
+        bMatrix =   inv(transpose(hcat(bz.basis...)))   ##### Changing velocity from reciprocal basis to cartesian basis.
+        
+        v       =   bMatrix * dH
+        H.velocity       =   DeArrayfy.(v, Ref(bz.gridSize))
+
+    end
+
+
+
+
+
+
 end
