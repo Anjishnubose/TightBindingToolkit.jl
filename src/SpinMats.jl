@@ -34,6 +34,11 @@ Returns the 3 generators of SU(2) in the given spin-representation, along with t
 
     end
 
+    function SpinMats(spin::Int64) :: Vector{Matrix{ComplexF64}}
+
+        return SpinMats(spin//1)
+    end
+
 
 @doc """
 ```julia
