@@ -88,31 +88,43 @@ Function to plot the `UnitCell`.
                 counts[index]   +=  1
 
                 if counts[index] == 1 && bond.label in plot_labels
-                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=bond_opacity)
+                    plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "$(bond.label)", linealpha=bond_opacity)
                 elseif counts[index] > 1 && bond.label in plot_labels
                     plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
                 end
                 ##### Plotting the conjugate of each bond
                 if plot_conjugate && bond.label in plot_labels
-                    plot!([base_conj[begin] , target_conj[begin]] , [base_conj[end], target_conj[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.5)
+                    plot!([base_conj[begin] , target_conj[begin]] , [base_conj[end], target_conj[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.75 * bond_opacity)
                 end
             end
 
         else
             for offset in offsets
-                shift   =   sum(offset .* uc.primitives)
+                counts      =   zeros(Int64, length(labels))
+                shift       =   sum(offset .* uc.primitives)
 
                 for bond in uc.bonds
                     base    =   shift + uc.basis[bond.base]
                     target  =   shift + uc.basis[bond.target] .+ sum(bond.offset .* uc.primitives)
+
+                    base_conj       =   shift + uc.basis[bond.target]
+                    target_conj     =   shift + uc.basis[bond.base] .- sum(bond.offset .* uc.primitives)
     
                     index   =   findfirst(==(bond.label), labels)
                     counts[index]   +=  1
-    
-                    if counts[index] == 1 && bond.label in plot_labels && offset == zeros(Int64, dim)
-                        plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = L"%$(bond.label)", linealpha=bond_opacity)
+                    
+                    if counts[index] == 1 && bond.label in plot_labels 
+                        if offset == zeros(Int64, dim)
+                            plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "$(bond.label)", linealpha=bond_opacity)
+                        else
+                            plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
+                        end
                     elseif counts[index] > 1 && bond.label in plot_labels 
                         plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
+                    end
+
+                    if plot_conjugate && bond.label in plot_labels
+                        plot!([base_conj[begin] , target_conj[begin]] , [base_conj[end], target_conj[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=0.75 * bond_opacity)
                     end
 
                 end
