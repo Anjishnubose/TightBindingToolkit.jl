@@ -134,7 +134,7 @@ GetConductivity!(Cond::Conductivity, as::Vector{Int64}  ; get_velocity::Bool = f
 Calculates the full DC conductivity. Optional Booleans to calculate the velocity matrix of the Hamiltonian, calculate spectral functions also.
 
 """
-    function GetConductivity!(Cond::Conductivity, as::Vector{Int64}  ; get_velocity::Bool = false, get_spectral::Bool = false)
+    function GetConductivity!(Cond::Conductivity, as::Vector{Int64}  ; get_velocity::Bool = false, get_spectral::Bool = true)
 
         if get_velocity
             GetVelocity!(Cond.M.Ham, Cond.M.bz)
