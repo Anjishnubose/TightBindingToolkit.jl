@@ -292,12 +292,14 @@ plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vecto
 Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on the given `BZ`. 
 
 """
-    function Plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64} ; cmp::Symbol = :turbo)
+    function Plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64} ; cmp::Symbol = :turbo, cbar::Bool=false)
         pyplot()
         @assert length(size(Ham.bands)) == 2 "Fermi surface plots only work for 2d Hamiltonians"
         offsets     =   GetAllOffsets(1, 2)
 
         plt = Plots.plot(aspect_ratio=:equal)
+
+        max_range   =   maximum(norm.(bz.basis))
 
         for j in band_index
             energies    =   getindex.(Ham.bands , j)
@@ -308,12 +310,16 @@ Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on th
 
                 x       =   getindex.(ks, 1)
                 y       =   getindex.(ks, 2)
-                contour!(x, y, energies, levels=Efermi, color=cmp, size=(600,600), cbar = false, lw=2)
+                contour!(x, y, energies, levels=Efermi, color=cmp, size=(600,600), cbar = cbar, lw=2, clims=extrema(Efermi), colorbar_ticks=Efermi)
 
                 for key in keys(bz.HighSymPoints)
                     p = Tuple(shift .+ bz.HighSymPoints[key])
-                    scatter!(p, label = "", markercolor=:orange)
-                    annotate!(p..., Plots.text(L"%$key", :bottom, :left, 8))
+
+                    if prod(-max_range .< p .< max_range)
+
+                        scatter!(p, label = "", markercolor=:orange)
+                        annotate!(p..., Plots.text(L"%$key", :bottom, :left, 8))
+                    end
                 end
 
                 if offset == [0, 0]
@@ -332,7 +338,7 @@ Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on th
         xlabel!(L"k_x", guidefontsize = 9)
         ylabel!(L"k_y", guidefontsize = 9)
         Ef  =   round.(Efermi, digits=2)
-        title!("Fermi Surface at " * L"E_f = %$Ef", titlefontsize = 12)
+        title!("Fermi Surface for bands : $(band_index) at " * L"E_f \in %$(extrema(Efermi))", titlefontsize = 12)
 
         max_range   =   maximum(norm.(bz.basis))
         xlims!((-max_range , max_range))
