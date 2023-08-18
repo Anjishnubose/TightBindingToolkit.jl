@@ -217,6 +217,12 @@ The calculation is done at a finite `spread` of the delta-function sum.
     end
 
 
+@doc """
+```julia
+GetVelocity!(H::Hamiltonian, bz::BZ) --> Vector{Array{Matrix{ComplexF64}, T}}
+```
+returns a vector of velocity matrices at each k point defined as ∂H(k)/∂k^{μ}.
+"""
     function GetVelocity!(H::Hamiltonian, bz::BZ) :: Vector{typeof(H.H)}
 
         dH      =   Central_Diff(H.H ; delta = (1 ./ bz.gridSize), PBC = repeat([true], length(bz.gridSize)))

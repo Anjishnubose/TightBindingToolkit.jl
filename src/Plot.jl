@@ -273,8 +273,10 @@ Can take in multiple bands into account ∈ `band_index`.
         
         if !closed 
             xticks!(label_indices, labels)
+            vline!(label_indices, linestyle=:dash, linecolor=:indigo, label="")
         else
             xticks!(vcat(label_indices , [length(bzpath)]), vcat(labels , [labels[begin]]))
+            vline!(label_indices, linestyle=:dash, linecolor=:indigo, label="")
         end
 
         xlabel!("Path", guidefontsize = 9)
@@ -290,6 +292,9 @@ Can take in multiple bands into account ∈ `band_index`.
 plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64})--> Plots.plot()
 ```
 Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on the given `BZ`. 
+
+- `cmp` determines the colorMap used for the contours.
+- `cbar` determines whether to plot the colorbar or not.    
 
 """
     function Plot_FS!(Ham::Hamiltonian , bz::BZ , Efermi::Vector{Float64} , band_index::Vector{Int64} ; cmp::Symbol = :turbo, cbar::Bool=false)
