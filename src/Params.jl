@@ -1,10 +1,10 @@
 module Parameters
-    export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams
+    export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams, Lookup
 
     using ..TightBindingToolkit.Useful: GetAllOffsets
     using ..TightBindingToolkit.UCell: Bond, UnitCell, IsSameBond
     using ..TightBindingToolkit.DesignUCell: RemoveBonds!
-    import ..TightBindingToolkit.DesignUCell: AddAnisotropicBond!, AddIsotropicBonds!
+    import ..TightBindingToolkit.DesignUCell: AddAnisotropicBond!, AddIsotropicBonds!, Lookup
 
     using LinearAlgebra, Logging
 
@@ -210,6 +210,66 @@ If you have a `UnitCell` built using the old technique of adding bonds directly,
 
         return params
 
+    end
+
+
+@doc """
+```julia
+Lookup(params::Vector{Param{T, R}})
+```
+Returns a lookup dictionary for a vector of parameters, instead of a unit cell (refer to [`Lookup`](@ref)).
+
+"""
+    function Lookup(params::Vector{Param{T, R}}) where {T, R}
+
+        lookupTable 	=	Dict()
+
+        for param in params
+            for bond in param.unitBonds
+                identifier 	=	(bond.base, bond.target, bond.offset)
+
+                if haskey(lookupTable, identifier)
+                    lookupTable[identifier] 	=	lookupTable[identifier] + param.value[end] * bond.mat
+
+                elseif haskey(lookupTable, (bond.target, bond.base, -bond.offset))
+                    ##### TODO : TEST
+                    flippedIndices 	=	collect(T:-1:1)
+                    lookupTable[(bond.target, bond.base, -bond.offset)] 	=	lookupTable[(bond.target, bond.base, -bond.offset)] + conj(param.value[end]) * collect(conj.(permutedims(bond.mat, flippedIndices)))
+
+                else
+                    lookupTable[identifier] 	=	param.value[end] * bond.mat
+                end
+
+            end
+		end
+
+		return lookupTable
+    end
+
+    function Lookup(params::Vector{Param{T}}) where {T}
+
+        lookupTable 	=	Dict()
+
+        for param in params
+            for bond in param.unitBonds
+                identifier 	=	(bond.base, bond.target, bond.offset)
+
+                if haskey(lookupTable, identifier)
+                    lookupTable[identifier] 	=	lookupTable[identifier] + param.value[end] * bond.mat
+
+                elseif haskey(lookupTable, (bond.target, bond.base, -bond.offset))
+                    ##### TODO : TEST
+                    flippedIndices 	=	collect(T:-1:1)
+                    lookupTable[(bond.target, bond.base, -bond.offset)] 	=	lookupTable[(bond.target, bond.base, -bond.offset)] + conj(param.value[end]) * collect(conj.(permutedims(bond.mat, flippedIndices)))
+
+                else
+                    lookupTable[identifier] 	=	param.value[end] * bond.mat
+                end
+
+            end
+		end
+
+		return lookupTable
     end
 
 
