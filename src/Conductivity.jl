@@ -67,7 +67,7 @@ Returns the matrix spectral function given the Hamiltonian, the frequency, and t
 
         end
         
-        return A ./ (2 * im)
+        return A ./ (2 * pi * im)
     end
 
 
@@ -164,7 +164,7 @@ Calculates the full DC conductivity. Optional Booleans to calculate the velocity
         for a in as
 
             spectralContribution=   real.(SpectralContribution.(Ref(Cond.M.Ham.velocity), Cond.spectral; a = a))
-            Cond.sigma["$(directions[a])$(directions[a])"]  =   -dw * sum(DistContribution .* spectralContribution) / (2 * pi)
+            Cond.sigma["$(directions[a])$(directions[a])"]  =   -dw * sum(DistContribution .* spectralContribution) * pi / length(Cond.M.uc.basis)
         end
 
     end
