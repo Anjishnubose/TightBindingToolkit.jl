@@ -27,7 +27,7 @@ export ChangePrimitives!, ExpandUnitCell, ExpandBonds!
 ##### Module to define Param structure which represents a general hopping parameter, and can be used to construct a UnitCell.
 include("Params.jl")
 using .Parameters
-export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams
+export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams, Lookup
 
 ##### Module to make a lattice in real-space using a UnitCell.
 include("Lattice.jl")
