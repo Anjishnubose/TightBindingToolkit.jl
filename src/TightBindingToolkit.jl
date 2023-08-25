@@ -27,7 +27,7 @@ export ChangePrimitives!, ExpandUnitCell, ExpandBonds!
 ##### Module to define Param structure which represents a general hopping parameter, and can be used to construct a UnitCell.
 include("Params.jl")
 using .Parameters
-export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams, Lookup
+export Param, AddAnisotropicBond!, AddIsotropicBonds!, AddSimilarBonds! , CreateUnitCell!, ModifyUnitCell!, GetParams, Lookup
 
 ##### Module to make a lattice in real-space using a UnitCell.
 include("Lattice.jl")
@@ -48,10 +48,18 @@ include("Hamiltonian.jl")
 using .Hams
 export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamiltonian , DiagonalizeHamiltonian! , DOS, ModifyHamiltonianField!, IsBandGapped, GetVelocity!
 
+include("LatticeHamiltonian.jl")
+using .LatHam
+export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!
+
 ##### Module to define a Tight-Binding Model structure which takes into account thermodynamical parameters such as temperature and filling etc.
 include("Model.jl")
 using .TBModel
 export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, SolveModel!, GetGap!, FreeEnergy, GetOrderParameter
+
+include("LatticeModel.jl")
+using .LatModel
+export LatticeModel , GetMu! , GetFilling! , GetGr!, SolveModel!, GetGap!
 
 ##### Module to define the equivalent but for bdG systems with pairing.
 include("BdGModel.jl")
