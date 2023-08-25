@@ -1,5 +1,5 @@
 module Parameters
-    export Param, AddAnisotropicBond!, AddIsotropicBonds!, CreateUnitCell!, ModifyUnitCell!, GetParams, Lookup
+    export Param, AddAnisotropicBond!, AddIsotropicBonds!, AddSimilarBonds! , CreateUnitCell!, ModifyUnitCell!, GetParams, Lookup
 
     using ..TightBindingToolkit.Useful: GetAllOffsets
     using ..TightBindingToolkit.UCell: Bond, UnitCell, IsSameBond
@@ -93,7 +93,7 @@ The input `checkOffsetRange` must be adjusted depending on the input distance.
 The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
 
 """    
-    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T, R}
+    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T, R}
     
         dims 	=	repeat([uc.localDim], T)
         @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
@@ -123,12 +123,50 @@ The optional input `subs` is meant for isotropic bonds when only a subset of sub
         end
     end
 
-    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=1 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T, R}
+    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T, R}
 
         @assert uc.localDim == 1
         dims 	=	repeat([uc.localDim], T)
         
         AddIsotropicBonds!( param, uc, dist, ComplexF64.(reshape([mat], dims...)), label; checkOffsetRange = checkOffsetRange , subs = subs)
+    end
+
+
+@doc """
+```julia
+AddSimilarBond!(param::Param{T, R}, uc::UnitCell{T}, bond::Bond{T} ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+AddSimilarBond!(param::Param{T, R}, uc::UnitCell{T}, base::Int64, target::Int64, offset::Vector{Int64}, mat::Array{ComplexF64, T}, dist::Float64, label::String ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+```
+Function to add bonds which are not completely isotropic, but are still related by translation (not by the unit cell primitives but by the underlying lattice primitives).
+
+"""
+    function AddSimilarBonds!(param::Param{T, R}, uc::UnitCell{T}, bond::Bond{T} ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+
+        MotherParam     =   Param(1.0, 2)
+        AddIsotropicBonds!(MotherParam, uc, bond.dist, bond.mat, bond.label ; checkOffsetRange = checkOffsetRange , subs = subs)
+
+        offsetToMatch    =   (uc.basis[bond.target] - uc.basis[bond.base]) + sum(bond.offset .* uc.primitives)
+
+        for trialBond in MotherParam.unitBonds
+
+            if (trialBond.base in subs) && (trialBond.target in subs)
+                offsetVector    =   (uc.basis[trialBond.target] - uc.basis[trialBond.base]) + sum(trialBond.offset .* uc.primitives)
+
+                if isapprox(offsetVector, offsetToMatch, rtol = 1e-6, atol = 1e-6)
+                    AddAnisotropicBond!(param, uc, trialBond.base, trialBond.target, trialBond.offset, bond.mat, bond.dist, bond.label)
+
+                elseif isapprox(offsetVector, -offsetToMatch, rtol = 1e-6, atol = 1e-6)
+                    AddAnisotropicBond!(param, uc, trialBond.target, trialBond.base, -trialBond.offset, bond.mat, bond.dist, bond.label)
+
+                end
+            end
+        end
+
+    end
+
+    function AddSimilarBonds!(param::Param{T, R}, uc::UnitCell{T}, base::Int64, target::Int64, offset::Vector{Int64}, mat::Array{ComplexF64, T}, dist::Float64, label::String ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+
+        AddSimilarBonds!(param, uc, Bond(base, target, offset, mat, dist, label) ; subs = subs, checkOffsetRange = checkOffsetRange)
     end
 
 
@@ -141,6 +179,8 @@ Add bonds corrsponding to a `param` to `UnitCell`, scaled with the `param.value[
 
 """
     function CreateUnitCell!(uc::UnitCell{T}, param::Param{T, R} , index::Int64=length(param.value)) where {T, R}
+        @assert !(param.label in getproperty.(uc.bonds, :label)) "Given label:$(param.label) already exists in the unit cell bonds"
+
         bonds   =   deepcopy(param.unitBonds)
         map(x -> x.mat = param.value[index] * x.mat, bonds)
         append!(uc.bonds, bonds)
