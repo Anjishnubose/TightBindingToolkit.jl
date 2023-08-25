@@ -20,13 +20,7 @@ Returns the maximum coordination number amongs all the sublattices of the `UnitC
         coords  =   zeros(Int64, length(uc.basis))
         for bond in uc.bonds
 
-            if bond.base == bond.target && bond.offset == zeros(Int64, length(uc.primitives))
-                coords[bond.base]    +=  1
-            else
-                coords[bond.base]    +=  1
-                coords[bond.target]  +=  1
-            end   
-            
+            coords[bond.base]    +=  1            
         end
 
         return max(coords...)
@@ -79,7 +73,12 @@ where `null_dist` and `null_label` are used for bonds which are not allowed due 
             Ncoords         =   GetMaxCoordinationNumber(uc)
             L               =   length(uc.basis) * prod(size)
 
-            return new{T}( uc, size, L, Dict{ Tuple{Int64, Vector{Int64}}, Int64}(), Vector{Float64}[], Vector{Float64}[], zeros( Int64, L, Ncoords), null_dist .* ones( Float64, L, Ncoords), repeat([null_label], L, Ncoords), Matrix{Array{ComplexF64, T}}( undef, L, Ncoords))
+            BondSites       =   zeros( Int64, L, Ncoords)
+            BondDists       =   null_dist .* ones( Float64, L, Ncoords)
+            BondLabels      =   repeat([null_label], L, Ncoords)
+            BondMats        =   repeat( [zeros(ComplexF64, repeat([uc.localDim], T)...)], L, Ncoords)
+
+            return new{T}( uc, size, L, Dict{ Tuple{Int64, Vector{Int64}}, Int64}(), Vector{Float64}[], Vector{Float64}[], BondSites, BondDists, BondLabels, BondMats)
         end
     end
 
@@ -185,29 +184,6 @@ Fills all the bond information in the lattice using the bonds in `UnitCell`.
 
             end
 
-            IncomingBonds   =   lattice.uc.bonds[findall(==(sub), targets)]
-
-            for bond in IncomingBonds
-
-                if bond.base == bond.target && bond.offset == zeros(Int64, length(lattice.size))
-
-                    continue
-                else
-
-                    targetOffset    =   ApplyBCToSite(offset - bond.offset, lattice.size, lattice.uc.BC)
-                    targetPhase     =   GetBCPhase(   offset - bond.offset, lattice.size, lattice.uc.BC)
-
-                    target          =   get(lattice.sites, (bond.base, targetOffset), 0)
-
-                    lattice.BondSites[ s, coord[s]]    =   target
-                    lattice.BondDists[ s, coord[s]]    =   !iszero(target) * bond.dist + iszero(target) * null_dist
-                    lattice.BondLabels[s, coord[s]]    =   iszero(target) ? null_label : bond.label
-                    lattice.BondMats[  s, coord[s]]    =   !iszero(target) * targetPhase * collect(conj.(permutedims(bond.mat, flippedIndices)))
-                    
-                    coord[s]   =   coord[s] + 1
-
-                end
-            end
         end
     end
 
