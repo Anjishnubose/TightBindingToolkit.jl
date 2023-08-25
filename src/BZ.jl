@@ -16,16 +16,22 @@ Returns the reciprocal lattice vectors corresponding to the given Unit Cell.
 """
     function GetRLVs( uc::UnitCell ) :: Vector{Vector{Float64}}
         if length(uc.primitives) == 1
-            return [2 *pi ./ uc.primitives[1]]
+            a1      =   uc.primitives[1]
+            return [(2 *pi / dot(a1, a1)) * a1]
 
         elseif length(uc.primitives) == 2
-            a1 = vcat( uc.primitives[1] , 0.0 )
-            a2 = vcat( uc.primitives[2] , 0.0 )
-            a3 = [ 0.0 , 0.0 , 1.0 ]
+            d   =   length(uc.primitives[begin])
+
+            if d==2
+                a1  = vcat( uc.primitives[1] , 0.0 )
+                a2  = vcat( uc.primitives[2] , 0.0 )
+            end
+
+            a3  = cross(a1, a2)
             V   = dot( a1 , cross( a2 , a3 ) )
             b1  = 2 * pi / V * ( cross( a2 , a3 ) )
             b2  = 2 * pi / V * ( cross( a3 , a1 ) )
-            return [ b1[1:2] , b2[1:2] ]
+            return [ b1[1:d] , b2[1:d] ]
 
         elseif length(uc.primitives) == 3
             V   = dot( uc.primitives[1] , cross( uc.primitives[2] , uc.primitives[3] ) )
@@ -103,23 +109,37 @@ The modified Monkhorst grid takes into account the desired boundary condition `B
         bz.HighSymPoints["G"]   =   zeros(Float64, dims)
         
         if dims == 1    ##### 1d BZ
-            bz.HighSymPoints["M1"]      =   @. 0.5 * bz.basis[1]    ##### M point at the midpoint of the BZ (pi)
+            bz.HighSymPoints["M1"]      =   @.  0.5 * bz.basis[1]
+            bz.HighSymPoints["-M1"]     =   @. -0.5 * bz.basis[1]    ##### M point at the midpoint of the BZ (pi)
             bz.HighSymPoints["K1"]      =   @. (1/3) * bz.basis[1]  ##### The two K points at pi/3 and 2pi/3
             bz.HighSymPoints["K2"]      =   @. (2/3) * bz.basis[1]  #####
-    
+            bz.HighSymPoints["K1"]      =   @. (1/3) * bz.basis[1]  ##### The two K points at pi/3 and 2pi/3
+            bz.HighSymPoints["K2"]      =   @. (2/3) * bz.basis[1]
+
         elseif dims == 2    ##### 2d BZ
     
-            bz.HighSymPoints["M1"]      =  @. 0.5 * bz.basis[1] + 0.0 * bz.basis[2]     ##### The 3 possible M points
-            bz.HighSymPoints["M2"]      =  @. 0.0 * bz.basis[1] + 0.5 * bz.basis[2]
-            bz.HighSymPoints["M3"]      =  @. 0.5 * bz.basis[1] + 0.5 * bz.basis[2]
+            bz.HighSymPoints["M1"]      =    @. 0.5 * bz.basis[1] + 0.0 * bz.basis[2]     ##### The 3 possible M points
+            bz.HighSymPoints["M2"]      =    @. 0.0 * bz.basis[1] + 0.5 * bz.basis[2]
+            bz.HighSymPoints["M3"]      =    @. 0.5 * bz.basis[1] + 0.5 * bz.basis[2]
+            bz.HighSymPoints["-M1"]     =  -(@. 0.5 * bz.basis[1] + 0.0 * bz.basis[2])     ##### The 3 possible M points
+            bz.HighSymPoints["-M2"]     =  -(@. 0.0 * bz.basis[1] + 0.5 * bz.basis[2])
+            bz.HighSymPoints["-M3"]     =  -(@. 0.5 * bz.basis[1] + 0.5 * bz.basis[2])
     
             if isapprox(VecAngle(bz.basis[1], bz.basis[2]), 2*pi/3, atol=1e-4, rtol=1e-4)   ##### The K points depend on the relative angle of the reciprocal basis.
                 bz.HighSymPoints["K1"]      =   @. (2/3) * bz.basis[1] + (1/3) * bz.basis[2]
                 bz.HighSymPoints["K2"]      =   @. (1/3) * bz.basis[1] + (2/3) * bz.basis[2]
+                bz.HighSymPoints["K1'"]     =   @. (-1/3) * bz.basis[1] + (1/3) * bz.basis[2]
+                bz.HighSymPoints["K2'"]     =   @. (-2/3) * bz.basis[1] + (-1/3) * bz.basis[2]
+                bz.HighSymPoints["K1''"]    =   @. (-1/3) * bz.basis[1] + (-2/3) * bz.basis[2]
+                bz.HighSymPoints["K2''"]    =   @. (1/3) * bz.basis[1] + (-1/3) * bz.basis[2]
     
             elseif isapprox(VecAngle(bz.basis[1], bz.basis[2]), pi/3, atol=1e-4, rtol=1e-4)
                 bz.HighSymPoints["K1"]      =   @. (1/3) * bz.basis[1] + (1/3) * bz.basis[2]
-                bz.HighSymPoints["K2"]      =   @. (2/3) * bz.basis[1] + (2/3) * bz.basis[2]
+                bz.HighSymPoints["K2"]      =   @. (-1/3) * bz.basis[1] + (-1/3) * bz.basis[2]
+                bz.HighSymPoints["K1'"]     =   @. (-2/3) * bz.basis[1] + (1/3) * bz.basis[2]
+                bz.HighSymPoints["K2'"]     =   @. (2/3) * bz.basis[1] + (-1/3) * bz.basis[2]
+                bz.HighSymPoints["K1''"]    =   @. (1/3) * bz.basis[1] + (-2/3) * bz.basis[2]
+                bz.HighSymPoints["K2''"]    =   @. (-1/3) * bz.basis[1] + (2/3) * bz.basis[2]
             end
     
         end
