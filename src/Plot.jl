@@ -315,15 +315,15 @@ Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on th
 
                 x       =   getindex.(ks, 1)
                 y       =   getindex.(ks, 2)
-                contour!(x, y, energies, levels=Efermi, color=cmp, size=(600,600), cbar = cbar, lw=2, clims=extrema(Efermi), colorbar_ticks=Efermi)
+                contour!(x, y, energies, levels=Efermi, color=cmp, size=(600,600), cbar = cbar, lw=2, clims=extrema(Efermi), colorbar_ticks=round.(Efermi[1:Int64(floor(length(Efermi) / 10)):end], digits = 3), fill = true)
 
                 for key in keys(bz.HighSymPoints)
                     p = Tuple(shift .+ bz.HighSymPoints[key])
 
-                    if prod(-max_range .< p .< max_range)
+                    if prod(-max_range .< p .< max_range) && norm(shift)<1e-6
 
-                        scatter!(p, label = "", markercolor=:orange)
-                        annotate!(p..., Plots.text(L"%$key", :bottom, :left, 8))
+                        scatter!(p, label = "", markercolor=:yellow, markersize = 15.0)
+                        annotate!(p..., Plots.text(L"%$key", :hcenter, :vcenter, 8, :red4))
                     end
                 end
 
@@ -337,7 +337,7 @@ Function to draw the fermi surface at `Efermi` for the given `Hamiltonian` on th
         end
 
         for (i, b) in enumerate(bz.basis)
-            Plots.plot!([0 , getindex(b , 1)] , [0 , getindex(b , 2)] , arrow=true , color=:black , lw=1 , label = L"b_{%$i}", linestyle=:dash)
+            Plots.plot!([0 , getindex(b , 1)] , [0 , getindex(b , 2)] , arrow=true , color=:black , lw=2 , label = L"b_{%$i}", linestyle=:dash, linealpha=0.75)
         end
 
         xlabel!(L"k_x", guidefontsize = 9)
