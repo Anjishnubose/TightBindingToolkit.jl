@@ -250,7 +250,7 @@ Can take in multiple bands into account ∈ `band_index`.
 `labels` are the Plot labels of the critical points.
 
 """
-    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}}, band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true, plot_legend::Bool = true) where {T<:Union{Model, BdGModel}}
+    function Plot_Band_Structure!(M::T, path::Vector{Vector{Float64}}, band_index::Vector{Int64} = collect(1:length(M.Ham.bands[begin])) ; labels::Vector{} = repeat([""], length(path)), closed::Bool=true, nearest::Bool=true, plot_legend::Bool = true, framestyle::Symbol = :box, guidefontsize::Int64 = 14, tickfontsize::Int64 = 12, font::String = "Helvetica", plot_title::Bool=true) where {T<:Union{Model, BdGModel}}
         
         ##### the k-points taken along the path joining the given points
         bzpath     = CombinedBZPath(M.bz, path ; nearest = nearest, closed = closed)
@@ -260,28 +260,29 @@ Can take in multiple bands into account ∈ `band_index`.
 
         label_indices    = getindex.(findmin.([norm.(Ref(ReduceQ(x,M.bz)).-bzpath) for x in path]) , 2)
 
-        plt = plot(grid=false, legend = plot_legend, bg_legend = :transparent)
+        plt = plot(grid=false, legend = plot_legend, bg_legend = :transparent, framestyle = framestyle, guidefontsize = guidefontsize, tickfontsize = tickfontsize)
         for j in band_index
             plot!(getindex.(bands_from_index , j), labels=L"Band : %$j", lw = 2.0)
         end
         if typeof(M)==BdGModel
-            hline!([0.0], linestyle = :dash, label="") ##### Effective chemical potential in BdG
+            hline!([0.0], linestyle = :dash, label="", linecolor=:black) ##### Effective chemical potential in BdG
         else
-            hline!([M.mu], linestyle = :dash, label=L"\mu") 
+            hline!([M.mu], linestyle = :dash, label=L"\mu", lw=0.5, linecolor=:black) 
         end
 
         
         if !closed 
             xticks!(label_indices, labels)
-            vline!(label_indices, linestyle=:dash, linecolor=:indigo, label="")
+            vline!(label_indices, linestyle=:dash, linecolor=:indigo, label="", lw=0.5)
         else
             xticks!(vcat(label_indices , [length(bzpath)]), vcat(labels , [labels[begin]]))
-            vline!(label_indices, linestyle=:dash, linecolor=:indigo, label="")
+            vline!(label_indices, linestyle=:dash, linecolor=:indigo, label="", lw=0.5)
         end
-
-        xlabel!("Path", guidefontsize = 9)
-        ylabel!("Energy", guidefontsize = 9)
-        title!("Band Structure along path", titlefontsize = 12)
+        ylabel!("Energy", guidefontsize = guidefontsize, guidefont=font)
+        if plot_title
+            xlabel!("Path", guidefontsize = guidefontsize, guidefont=font)
+            title!("Band Structure along path", titlefontsize = 12, guidefont=font)
+        end
 
         return plt
     end
