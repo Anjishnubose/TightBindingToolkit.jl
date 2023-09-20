@@ -58,7 +58,7 @@ where `null_dist` and `null_label` are used for bonds which are not allowed due 
         All sites and fields
         """
         sites       ::  Dict{ Tuple{Int64, Vector{Int64}}, Int64}
-        positions   ::  Vector{ Vector{Float64}}
+        positions   ::  Dict{ Int64, Tuple{Vector{Float64}, Tuple{Int64, Vector{Int64}}}}
         fields      ::  Vector{ Vector{Float64}}
         """
         Bond information
@@ -78,7 +78,7 @@ where `null_dist` and `null_label` are used for bonds which are not allowed due 
             BondLabels      =   repeat([null_label], L, Ncoords)
             BondMats        =   repeat( [zeros(ComplexF64, repeat([uc.localDim], T)...)], L, Ncoords)
 
-            return new{T}( uc, size, L, Dict{ Tuple{Int64, Vector{Int64}}, Int64}(), Vector{Float64}[], Vector{Float64}[], BondSites, BondDists, BondLabels, BondMats)
+            return new{T}( uc, size, L, Dict{ Tuple{Int64, Vector{Int64}}, Int64}(), Dict{ Int64, Tuple{Vector{Float64}, Tuple{Int64, Vector{Int64}}}}(), Vector{Float64}[], BondSites, BondDists, BondLabels, BondMats)
         end
     end
 
@@ -101,16 +101,15 @@ Fills all the sites, positions, and fields of the lattice using information in t
                 position    =   sum(offset .* lattice.uc.primitives) + basis
 
                 lattice.sites[(b, offset)]  =   site
+                lattice.positions[site]     =   (position, (b, offset))
                 site        =   site + 1
 
-                push!(lattice.positions , position)
                 push!(lattice.fields, lattice.uc.fields[b])
 
             end
         end
     
     end
-
 
 @doc """
 ```julia
@@ -155,16 +154,13 @@ Fills all the bond information in the lattice using the bonds in `UnitCell`.
     function FillBonds!(lattice::Lattice{T} ; null_dist::Float64 = -1.0, null_label::String = "-" ) where {T}
 
         bases           =   getproperty.(lattice.uc.bonds, :base)
-        targets         =   getproperty.(lattice.uc.bonds, :target)
         coord           =   ones(Int64, lattice.length)
 
         flippedIndices 	=	collect(T:-1:1)
 
-        for site in keys(lattice.sites)
+        for (site, s) in lattice.sites
 
             sub, offset     =   site
-            s               =   lattice.sites[site]
-            pos             =   lattice.positions[s]
 
             OutgoingBonds   =   lattice.uc.bonds[findall(==(sub), bases)]
 
