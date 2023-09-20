@@ -89,6 +89,6 @@ export Conductivity, SpectralFunction, SpectralContribution, GetConductivity!
 ##### Module containing some plotting functions
 include("Plot.jl")
 using .PlotTB
-export Plot_UnitCell! , Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!, Plot_Fields!
+export Plot_UnitCell! , Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!, Plot_Fields!, Plot_Lattice!
 
 end

@@ -1,5 +1,5 @@
 module PlotTB
-    export Plot_UnitCell! ,Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!, Plot_Fields!
+    export Plot_UnitCell! ,Plot_Band_Contour!, Plot_Band_Structure!, Plot_FS!, Plot_Fields!, Plot_Lattice!
 
     using LinearAlgebra, LaTeXStrings, Plots
 
@@ -7,6 +7,7 @@ module PlotTB
     using ..TightBindingToolkit.SpinMatrices: SpinMats
     using ..TightBindingToolkit.UCell:UnitCell
     using ..TightBindingToolkit.DesignUCell:Lookup
+    using ..TightBindingToolkit.LatticeStruct: Lattice
     using ..TightBindingToolkit.BZone:BZ, GetQIndex, GetBZPath, CombinedBZPath, ReduceQ
     using ..TightBindingToolkit.Hams:Hamiltonian
     using ..TightBindingToolkit.TBModel:Model
@@ -139,6 +140,66 @@ Function to plot the `UnitCell`.
 
     end
 
+
+    function Plot_Lattice!(lat::Lattice{T} ; bond_cmp::Symbol = :matter, sub_cmp::Symbol = :rainbow, plot_labels::Vector{String} = unique(getproperty.(lat.uc.bonds, :label)), plot_arrows::Bool = true, bond_opacity::Float64 = 0.6, site_size::Float64 = 16.0, bond_thickness::Tuple{Float64, Float64} = (4.0, 2.0), bond_rev::Bool=false) where {T}
+
+        dim         =   length(lat.uc.primitives)
+        @assert dim == 2 "Unit Cell plotting only works for 2d right now!"
+
+        subCmp     =   cgrad(sub_cmp, max(2 , length(lat.uc.basis)), categorical=true, rev=true)
+
+        p       =   plot(aspect_ratio=:equal, grid=false)
+
+        ##### Plotting sites
+        for (site, info) in lat.positions
+
+            position    =   info[1]
+            sub, offset =   info[2]
+
+            ##### Lattice sites
+            scatter!(Tuple(position), label = "", markercolor=:darkorange1, markersize=site_size, markeralpha = 0.7, markerstrokecolor = subCmp[sub], markerstrokewidth = 0.4 * site_size )
+            annotate!(position..., Plots.text(L"\mathbf{%$(site)}", :hcenter, :vcenter, round(Int64, site_size), :beige)) 
+
+        end
+
+        ##### Different labels, colors, and thickness of each bond types.
+        labels      =   unique(getproperty.(lat.uc.bonds, :label))
+        cmp         =   cgrad(bond_cmp, max(2 , length(labels)), categorical=true, rev=bond_rev)
+        thickness   =   collect(bond_thickness[1]:-(bond_thickness[1] - bond_thickness[2])/(max(2 , length(labels)) -1):bond_thickness[2])   
+        counts      =   zeros(Int64, length(labels))
+
+        for site in 1:lat.length
+            for (coord, neighbour) in enumerate(lat.BondSites[site, :])
+
+                base    =   lat.positions[site][1]
+                if neighbour != 0
+                    target  =   lat.positions[neighbour][1]
+                    label   =   lat.BondLabels[site, coord]
+                    dist    =   lat.BondDists[site, coord]
+
+                    if norm(target - base) ≈ dist
+
+                        index   =   findfirst(==(label), labels)
+                        counts[index]   +=  1
+
+                        if counts[index] == 1 && label in plot_labels
+                            plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "$(label)", linealpha=bond_opacity)
+                        elseif counts[index] > 1 && label in plot_labels
+                            plot!([base[begin] , target[begin]] , [base[end], target[end]] , arrow=plot_arrows , color=cmp[index] , linewidth=thickness[index] , label = "", linealpha=bond_opacity)
+                        end
+                    end
+                end
+
+            end
+        end
+
+        xlabel!(L"x")
+        ylabel!(L"y")
+        title!("Lattice")
+
+        return p
+
+    end
 
 @doc """
 ```julia
