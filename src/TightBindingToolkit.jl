@@ -9,7 +9,7 @@ export SpinMats, HermitianBasis
 
 include("Useful.jl")
 using .Useful
-export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix #, Central_Diff, Arrayfy, DeArrayfy
+export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, GetPhase #, Central_Diff, Arrayfy, DeArrayfy
 
 ##### Module for defining Unit Cell structure and some funcitons to manipulate it.
 include("UnitCell.jl")
@@ -60,6 +60,11 @@ export Model , FindFilling , GetMu! , GetFilling! , GetCount , GetGk! , GetGr!, 
 include("LatticeModel.jl")
 using .LatModel
 export LatticeModel , GetMu! , GetFilling! , GetGr!, SolveModel!, GetGap!
+
+################# Symmetries acting on lattice #################
+include("LatticeSymmetries.jl")
+using .LatticeSymmetries
+export Translations, Degeneracies, FindQuantumNumbers
 
 ##### Module to define the equivalent but for bdG systems with pairing.
 include("BdGModel.jl")
