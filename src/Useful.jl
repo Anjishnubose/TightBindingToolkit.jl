@@ -1,5 +1,5 @@
 module Useful
-    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy
+    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy, GetPhase
 
     using LinearAlgebra, Statistics, FFTW, TensorCast
 
@@ -249,7 +249,10 @@ PBC   : vector of boolean with length = spatial dimensions = rank of f ---> if t
     end
 
 
+    function GetPhase(v::Vector{ComplexF64}) :: Vector{Float64}
 
+        return mod.(angle.(v) / (2 * pi), Ref(1.0))
+    end
 
 
 end
