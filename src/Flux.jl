@@ -4,6 +4,7 @@ module Flux
 
     using LinearAlgebra
 
+    using ..TightBindingToolkit.Useful: SegmentIntersection
     using ..TightBindingToolkit.LatticeStruct: Lattice, FillLattice!
 
 
@@ -36,6 +37,30 @@ module Flux
         r2s         =   getindex.(getindex.(Ref(lat.positions), lat.BondSites) , Ref(1))
 
         phases      =   exp.( im .* GetBondPhase.(Ref(A), r1s, r2s ; n = n, _kwargs=_kwargs))
+        lat.BondMats=   lat.BondMats .* phases
+
+    end
+
+
+    function GetStringPhase(Monopoles::Vector{Vector{Float64}}, r1::Vector{Float64}, r2::Vector{Float64} ;  flux::Float64 = pi) :: ComplexF64
+
+        t = SegmentIntersection(Monopoles, [r1, r2])
+
+        if t>=0.0 && t<1.0
+            return exp(im * flux)
+        else
+            return 1.0
+        end
+    end
+
+
+    function InsertMonopolePair(lat::Lattice{T}, Monopoles::Vector{Vector{Float64}} ; flux::Float64 = pi )
+
+        positions   =   getindex.(getindex.(Ref(lat.positions), collect(1:lat.length)) , Ref(1)) 
+        r1s         =   repeat(positions, 1, size(lat.BondSites, 2))
+        r2s         =   getindex.(getindex.(Ref(lat.positions), lat.BondSites) , Ref(1))
+
+        phases      =   GetStringPhase.(Ref(Monopoles), r1s, r2s ; flux = flux)
         lat.BondMats=   lat.BondMats .* phases
 
     end
