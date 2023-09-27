@@ -108,6 +108,8 @@ Fills all the sites, positions, and fields of the lattice using information in t
 
             end
         end
+
+        lattice.positions[0]    =   (999 * ones(Float64, length(lattice.uc.primitives)), (0, zeros(Int64, length(lattice.uc.primitives))))
     
     end
 
