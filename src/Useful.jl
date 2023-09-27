@@ -1,5 +1,5 @@
 module Useful
-    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy, GetPhase
+    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy, GetPhase, SegmentIntersection
 
     using LinearAlgebra, Statistics, FFTW, TensorCast
 
@@ -252,6 +252,22 @@ PBC   : vector of boolean with length = spatial dimensions = rank of f ---> if t
     function GetPhase(v::Vector{ComplexF64}) :: Vector{Float64}
 
         return mod.(angle.(v) / (2 * pi), Ref(1.0))
+    end
+
+
+    function SegmentIntersection(SegmentPoints::Vector{Vector{Float64}}, LinePoints::Vector{Vector{Float64}})::Float64
+
+        M1, M2  =   SegmentPoints
+        r1, r2  =   LinePoints
+
+        dx  =   (r2[1] - r1[1])
+        dy  =   (r2[2] - r1[2])
+        dMx =   (M2[1] - M1[1])
+        dMy =   (M2[2] - M1[2])
+
+        t       =   (dx * (r1[2] - M1[2]) - dy * (r1[1] - M1[1])) / (dx * dMy - dy * dMx)
+
+        return t
     end
 
 
