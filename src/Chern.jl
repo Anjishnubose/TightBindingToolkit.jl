@@ -1,5 +1,5 @@
 module Chern
-    export FindLinks , FieldStrength , ChernNumber, CheckValidity
+    export FindLinks , FieldStrength , ChernNumber, CheckValidity, PartialChernNumber, FilledChernNumber
 
     using ..TightBindingToolkit.Hams:Hamiltonian, IsBandGapped
 
@@ -11,8 +11,7 @@ module Chern
 FindLinks(Ham::Hamiltonian, subset::Vector{Int64}) --> Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
 ```
 Function to get the linking matrices on each neighbouring point in the `BZ`.
-On a bond connecting k_i and k_j, the linking matrix U is defined such that U[m, n] = <v^m[k_i]|v^n[k_j]> where states[k_j[1], k_j[2], :, m] 
-v^m[k_j], the mth eigenstate at momentum k_j.
+On a bond connecting k_i and k_j, the linking matrix U is defined such that U[m, n] = <v^m[k_i]|v^n[k_j]> where states[k_j[1], k_j[2]][:, m] = v^m[k_j], the mth eigenstate at momentum k_j.
 
 """
     function FindLinks(Ham::Hamiltonian, subset::Vector{Int64})::Tuple{Matrix{ComplexF64}, Matrix{ComplexF64}}
@@ -84,5 +83,50 @@ Function to get Chern numbers given a `Hamiltonian` and a `subset` of bands
         chern   =   (1/(2*pi)) * sum(angle.(Field))
         return chern
     end
+
+
+@doc """
+```julia
+PartialChernNumber(Ham::Hamiltonian, band::Int64, mu::Float64) --> Float64
+Function to get the Chern number of a partially filled band given a `Hamiltonian`, a `band` index, and a chemical potential `mu`.
+
+"""
+    function PartialChernNumber(Ham::Hamiltonian, band::Int64, mu::Float64)::Float64
+        
+        @assert band in UnitRange(1, length(Ham.bands[begin])) "Band index out of range!"
+
+        Links   =   FindLinks(Ham, [band])
+        Field   =   FieldStrength(Links)
+
+        energies=   getindex.(Ham.bands, Ref(band))
+        filled  =   (energies .< mu)
+        chern   =   (1/(2*pi)) * sum((angle.(Field)) .* filled )
+
+        return chern    
+    end
+
+
+@doc """
+```julia
+FilledChernNumber(Ham::Hamiltonian, mu::Float64) --> Float64
+Function to get the Chern number of bands filled upto a given chemical potential `mu`.
+
+"""
+    function FilledChernNumber(Ham::Hamiltonian, mu::Float64)::Float64
+
+        filled_bands    =   searchsortedfirst.(Ham.bands, Ref(mu)) .- 1
+
+        if findmax(filled_bands)[1] == 0
+            @warn "Chemical potential is below the lowest band. Chern number is not well defined!"
+            return 0.0
+
+        else
+            return sum(PartialChernNumber.(Ref(Ham), collect(1:findmax(filled_bands)[1]), Ref(mu)))
+        end
+
+    end
+
+
+
 
 end
