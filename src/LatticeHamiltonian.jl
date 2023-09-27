@@ -1,5 +1,5 @@
 module LatHam
-    export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!
+    export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!, Slater, SingleParticleFidelity, SlaterOverlap
 
     using ..TightBindingToolkit.LatticeStruct: Lattice
     import ..TightBindingToolkit.Hams: FillHamiltonian, DiagonalizeHamiltonian!
@@ -62,52 +62,30 @@ module LatHam
     end
 
 
+    function SingleParticleFidelity(H1::LatticeHamiltonian, H2::LatticeHamiltonian) :: Matrix{ComplexF64}
+
+        @assert size(H1) == size(H2) "The two hamiltonians must be the same size!"
+
+        fidelity = adjoint(H1.states) * H2.states
+
+        return fidelity
+    end
 
 
+    function Slater(H::LatticeHamiltonian, positions::Vector{Int64}, states::Vector{Int64} = collect(1:length(positions))) :: ComplexF64
+        
+        @assert length(positions) == length(states) "Number of particles must be equal to the number of positions to be filled!"
+
+        SlaterDet = H.states[positions, states]
+        SlaterDet = det(SlaterDet)
+
+        return SlaterDet
+    end
 
 
+    function SlaterOverlap(H1::LatticeHamiltonian, H2::LatticeHamiltonian) :: ComplexF64
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return det(SingleParticleFidelity(H1, H2))
+    end
 
 end
