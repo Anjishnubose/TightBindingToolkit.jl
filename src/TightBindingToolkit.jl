@@ -38,6 +38,10 @@ include("DesignLattice.jl")
 using .DesignLattice
 export CreateLattice, ModifyLattice!, ScaleLatticeBonds!, ScaleLattice!, RemoveLatticeBonds!
 
+include("Flux.jl")
+using .Flux
+export GetBondPhase, CheckGaugeValidity, ModifyGauge!
+
 ##### Module to define Brillouin Zone structure and some functions to manipulate it.
 include("BZ.jl")
 using .BZone
@@ -50,7 +54,7 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
 
 include("LatticeHamiltonian.jl")
 using .LatHam
-export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!
+export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!, Slater, SingleParticleFidelity, SlaterOverlap
 
 ##### Module to define a Tight-Binding Model structure which takes into account thermodynamical parameters such as temperature and filling etc.
 include("Model.jl")
@@ -74,7 +78,7 @@ export BdGModel, FindFilling , GetMu! , GetFilling! , GetGk! , GetGr!, SolveMode
 ##### Module to calculate generalized Chern numbers
 include("Chern.jl")
 using .Chern
-export FindLinks , FieldStrength , ChernNumber, CheckValidity
+export FindLinks , FieldStrength , ChernNumber, CheckValidity, PartialChernNumber, FilledChernNumber
 
 ##### Module to calculate generalized magnetic susceptibility
 include("Susceptibility.jl")
