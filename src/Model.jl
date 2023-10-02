@@ -8,7 +8,7 @@ module TBModel
     using ..TightBindingToolkit.Parameters: Param
     using ..TightBindingToolkit.Hams:Hamiltonian
 
-    using LinearAlgebra, Logging
+    using LinearAlgebra, Logging, Statistics
 
 
 @doc """
@@ -77,13 +77,13 @@ GetMu!(M::Model; tol::Float64=0.001)
 Function to get chemical potential for a given `Model`, within a tolerance.
 
 """
-    function GetMu!(M::Model ;  mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
-    
+    function GetMu!(M::Model ;  guess::Float64 = 0.0, mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
+        ##### TODO Get an initial guess and pass to BinarySearch
         if M.T≈0.0
             energies  =   sort(reduce(vcat, M.Ham.bands))
             M.mu      =   (energies[floor(Int64, length(energies)*M.filling)] + energies[floor(Int64, length(energies)*M.filling)+1])/2
         else
-            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M.Ham.bands, M.T, M.stat) ; x_tol=mu_tol, target_tol = filling_tol)
+            M.mu      =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M.Ham.bands, M.T, M.stat) ; initial = guess, x_tol=mu_tol, target_tol = filling_tol)
             @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
         end
     end
@@ -153,13 +153,13 @@ SolveModel!(M::Model)
 one-step function to find all the attributes in Model after it has been initialized.
 
 """
-    function SolveModel!(M::Model ; get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
+    function SolveModel!(M::Model ; mu_guess::Float64 = M.Ham.bandwidth[1] + M.filling * (M.Ham.bandwidth[2] - M.Ham.bandwidth[1]), get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==false "BdG Hamiltonians should be solved using a BdGModel"
-
+        ##### TODO Pass initial guess of chemical potential to GetMu! if provided by user
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
             GetFilling!(M)
         else
-            GetMu!(M ; mu_tol = mu_tol, filling_tol = filling_tol)
+            GetMu!(M ; guess = mu_guess, mu_tol = mu_tol, filling_tol = filling_tol)
         end
 
         if get_gap
