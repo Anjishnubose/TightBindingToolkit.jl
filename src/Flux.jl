@@ -1,6 +1,6 @@
 module Flux
 
-    export GetBondPhase, CheckGaugeValidity, ModifyGauge!
+    export GetBondPhase, CheckGaugeValidity, ModifyGauge!, GetStringPhase, InsertMonopolePair!
 
     using LinearAlgebra
 
@@ -42,11 +42,12 @@ module Flux
     end
 
 
-    function GetStringPhase(Monopoles::Vector{Vector{Float64}}, r1::Vector{Float64}, r2::Vector{Float64} ;  flux::Float64 = pi) :: ComplexF64
+    function GetStringPhase(Monopoles::Vector{Vector{Float64}}, r1::Vector{Float64}, r2::Vector{Float64} ;  flux::Float64 = Float64(pi)) :: ComplexF64
 
         t = SegmentIntersection(Monopoles, [r1, r2])
+        r = SegmentIntersection([r1, r2], Monopoles)
 
-        if t>=0.0 && t<1.0
+        if t>=0.0 && t<1.0 && r>=0.0 && r<1.0
             return exp(im * flux)
         else
             return 1.0
@@ -54,14 +55,20 @@ module Flux
     end
 
 
-    function InsertMonopolePair(lat::Lattice{T}, Monopoles::Vector{Vector{Float64}} ; flux::Float64 = pi )
+    function InsertMonopolePair!(lat::Lattice{T}, Monopoles::Vector{Vector{Float64}} ; flux::Float64 = Float64(pi) ) where{T}
 
         positions   =   getindex.(getindex.(Ref(lat.positions), collect(1:lat.length)) , Ref(1)) 
         r1s         =   repeat(positions, 1, size(lat.BondSites, 2))
         r2s         =   getindex.(getindex.(Ref(lat.positions), lat.BondSites) , Ref(1))
 
+        dists       =   norm.(r2s .- r1s)
+        check       =   isapprox.(dists, lat.BondDists, atol = 1e-6, rtol = 1e-6)
+
         phases      =   GetStringPhase.(Ref(Monopoles), r1s, r2s ; flux = flux)
+        phases      =   phases .^ check
         lat.BondMats=   lat.BondMats .* phases
+
+        return findall(==(false), isapprox.(phases, Ref(1.0)))
 
     end
 
