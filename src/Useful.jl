@@ -57,21 +57,19 @@ BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple
 General function implementing Binary search on a monotonic function f(x, args...)=target, in the range x ∈ xRange, with tolerance tol. 
 
 """
-    function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; x_tol::Float64 = 0.001, target_tol::Float64 = 1e-6) where T<:Function
+    function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; initial::Float64 = mean(xRange), x_tol::Float64 = 1e-3, target_tol::Float64 = 1e-6)::Float64 where T<:Function
+        ##### TODO pass an initial guess 
         xExt = collect(xRange)
-        current = nothing
+        @assert xExt[1] <= initial <= xExt[2] "xRange must be an increasing tuple of Float64, and initial guess must be in between."
+        current = initial
         ##### ///TODO : Fix bug when steps = 0
         if xExt[end]!= xExt[begin]
-            steps       =   Int(ceil(log2((xExt[end]-xExt[begin])/(x_tol)))) 
-        end
-
-        if steps == 0
-            steps   =   1
+            steps       =   max(Int(ceil(log2((xExt[end]-xExt[begin])/(x_tol)))), 1)
         end
         
         for i in 1:steps
-            current = mean(xExt)
             check = f(current, args...)
+
             if check - target > target_tol
                 xExt[end] = current
             elseif check - target < -target_tol
@@ -79,6 +77,8 @@ General function implementing Binary search on a monotonic function f(x, args...
             else
                 break
             end
+
+            current     =   mean(xExt)
         end
     
         return current
