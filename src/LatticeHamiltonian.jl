@@ -1,5 +1,5 @@
 module LatHam
-    export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!, Slater, SingleParticleFidelity, SlaterOverlap
+    export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!, Slater, SingleParticleFidelity, SlaterOverlap, GaugeFix!
 
     using ..TightBindingToolkit.LatticeStruct: Lattice
     import ..TightBindingToolkit.Hams: FillHamiltonian, DiagonalizeHamiltonian!
@@ -62,11 +62,33 @@ module LatHam
     end
 
 
-    function SingleParticleFidelity(H1::LatticeHamiltonian, H2::LatticeHamiltonian) :: Matrix{ComplexF64}
+    function GaugeFix!(H::LatticeHamiltonian, gauge::Tuple{Int64, Float64} = (1, 0.0))
 
-        @assert size(H1) == size(H2) "The two hamiltonians must be the same size!"
+        site, DesiredPhase = gauge[1], gauge[2]
 
-        fidelity = adjoint(H1.states) * H2.states
+        NormCheck = (abs2.(H.states[site:end, :]) .> 0.0)
+        NonTrivialNormSites = findfirst.(==(1), eachcol(NormCheck)) .+ (site - 1)     
+
+        phases = angle.(getindex.(Ref(H.states), NonTrivialNormSites, 1:length(H.bands)))
+        phaseShift = exp.(im .* (DesiredPhase .- phases))
+
+        H.states = H.states .* phaseShift'
+
+        return (NonTrivialNormSites, phaseShift)
+
+    end
+
+
+    function SingleParticleFidelity(H1::LatticeHamiltonian, H2::LatticeHamiltonian, states::Vector{Int64} = collect(1:length(H1.bands)) ; fixGauge::Bool = true, gauge::Tuple{Int64, Float64} = (1, 0.0)) :: Matrix{ComplexF64}
+
+        @assert size(H1.H) == size(H2.H) "The two hamiltonians must be the same size!"
+
+        if fixGauge
+            GaugeFix!(H1, gauge)
+            GaugeFix!(H2, gauge)
+        end
+
+        fidelity = adjoint(H1.states[:, states]) * H2.states[:, states]
 
         return fidelity
     end
@@ -83,9 +105,9 @@ module LatHam
     end
 
 
-    function SlaterOverlap(H1::LatticeHamiltonian, H2::LatticeHamiltonian) :: ComplexF64
+    function SlaterOverlap(H1::LatticeHamiltonian, H2::LatticeHamiltonian, states::Vector{Int64} = collect(1:Int64(length(H1.bands)//2)); fixGauge::Bool = true, gauge::Tuple{Int64, Float64} = (1, 0.0)) :: ComplexF64
 
-        return det(SingleParticleFidelity(H1, H2))
+        return det((SingleParticleFidelity(H1, H2, states ; fixGauge = fixGauge, gauge = gauge)))
     end
 
 end
