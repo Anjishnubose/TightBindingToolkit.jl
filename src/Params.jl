@@ -50,7 +50,7 @@ Add a bond with the given attributes to `param`.
 If given `mat` attribute is a number, it is converted into a 1x1 matrix when entered into the bond.
 
 """
-    function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Array{<:Number, T} , dist::Float64, label::String ) where {T, R}
+    function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T2} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Array{<:Number, T} , dist::Float64, label::String ) where {T, R, T2}
 
         dims 	=	repeat([uc.localDim], T)
         @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
@@ -73,7 +73,7 @@ If given `mat` attribute is a number, it is converted into a 1x1 matrix when ent
         end
     end
     
-    function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T, R}
+    function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T2} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Number , dist::Float64, label::String ) where {T, R, T2}
 	
         @assert uc.localDim == 1
         dims 	=	repeat([uc.localDim], T)
@@ -93,7 +93,7 @@ The input `checkOffsetRange` must be adjusted depending on the input distance.
 The optional input `subs` is meant for isotropic bonds when only a subset of sublattices are involved.
 
 """    
-    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T, R}
+    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T2} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T, R, T2}
     
         dims 	=	repeat([uc.localDim], T)
         @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
@@ -123,7 +123,7 @@ The optional input `subs` is meant for isotropic bonds when only a subset of sub
         end
     end
 
-    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T, R}
+    function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T2} , dist::Float64 , mat::Number , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis))) where {T, R, T2}
 
         @assert uc.localDim == 1
         dims 	=	repeat([uc.localDim], T)
@@ -134,13 +134,13 @@ The optional input `subs` is meant for isotropic bonds when only a subset of sub
 
 @doc """
 ```julia
-AddSimilarBond!(param::Param{T, R}, uc::UnitCell{T}, bond::Bond{T} ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
-AddSimilarBond!(param::Param{T, R}, uc::UnitCell{T}, base::Int64, target::Int64, offset::Vector{Int64}, mat::Array{ComplexF64, T}, dist::Float64, label::String ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+AddSimilarBond!(param::Param{T, R}, uc::UnitCell{T2}, bond::Bond{T} ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+AddSimilarBond!(param::Param{T, R}, uc::UnitCell{T2}, base::Int64, target::Int64, offset::Vector{Int64}, mat::Array{ComplexF64, T}, dist::Float64, label::String ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
 ```
 Function to add bonds which are not completely isotropic, but are still related by translation (not by the unit cell primitives but by the underlying lattice primitives).
 
 """
-    function AddSimilarBonds!(param::Param{T, R}, uc::UnitCell{T}, bond::Bond{T} ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+    function AddSimilarBonds!(param::Param{T, R}, uc::UnitCell{T2}, bond::Bond{T} ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R, T2}
 
         MotherParam     =   Param(1.0, 2)
         AddIsotropicBonds!(MotherParam, uc, bond.dist, bond.mat, bond.label ; checkOffsetRange = checkOffsetRange , subs = subs)
@@ -164,7 +164,7 @@ Function to add bonds which are not completely isotropic, but are still related 
 
     end
 
-    function AddSimilarBonds!(param::Param{T, R}, uc::UnitCell{T}, base::Int64, target::Int64, offset::Vector{Int64}, mat::Array{ComplexF64, T}, dist::Float64, label::String ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R}
+    function AddSimilarBonds!(param::Param{T, R}, uc::UnitCell{T2}, base::Int64, target::Int64, offset::Vector{Int64}, mat::Array{ComplexF64, T}, dist::Float64, label::String ;  subs::Vector{Int64}=collect(1:length(uc.basis)), checkOffsetRange::Int64=2) where {T, R, T2}
 
         AddSimilarBonds!(param, uc, Bond(base, target, offset, mat, dist, label) ; subs = subs, checkOffsetRange = checkOffsetRange)
     end
