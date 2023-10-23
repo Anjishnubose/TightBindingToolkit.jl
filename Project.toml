@@ -1,7 +1,7 @@
 name = "TightBindingToolkit"
 uuid = "2233325a-6eb3-486f-aff0-670e0939fa7e"
 authors = ["Anjishnu Bose", "Sreekar Voleti", "Samuel Vadnais"]
-version = "2.3.1"
+version = "2.3.2"
 
 [deps]
 Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
