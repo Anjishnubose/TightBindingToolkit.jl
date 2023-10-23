@@ -1,5 +1,5 @@
 module Useful
-    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy, GetPhase, SegmentIntersection
+    export GetAllOffsets, VecAngle, Meshgrid, BinarySearch, DistFunction, DeriDistFunction , GetIndexPath, FFTArrayofMatrix, Central_Diff, Arrayfy, DeArrayfy, GetPhase, SegmentIntersection, SwitchKroneckerBasis, SecantSearch, ImpIndices
 
     using LinearAlgebra, Statistics, FFTW, TensorCast
 
@@ -58,10 +58,17 @@ General function implementing Binary search on a monotonic function f(x, args...
 
 """
     function BinarySearch(target::Float64, xRange::Tuple{Float64, Float64}, f::T, args::Tuple ; initial::Float64 = mean(xRange), x_tol::Float64 = 1e-3, target_tol::Float64 = 1e-6)::Float64 where T<:Function
-        ##### TODO pass an initial guess 
+        ##### ///TODO pass an initial guess 
         xExt = collect(xRange)
-        @assert xExt[1] <= initial <= xExt[2] "xRange must be an increasing tuple of Float64, and initial guess must be in between."
-        current = initial
+        ##### Choosing initial point to start Binary search with. 
+        if initial < xExt[begin]
+            current = xExt[begin]
+        elseif xExt[end] < initial
+            current = xExt[end]
+        else
+            current = initial
+        end 
+
         ##### ///TODO : Fix bug when steps = 0
         if xExt[end]!= xExt[begin]
             steps       =   max(Int(ceil(log2((xExt[end]-xExt[begin])/(x_tol)))), 1)
@@ -82,6 +89,27 @@ General function implementing Binary search on a monotonic function f(x, args...
         end
     
         return current
+    end
+
+
+    function SecantSearch(target::Float64, xInitials::Vector{Float64}, yInitials::Vector{Float64}, f::T, args::Tuple ; x_tol::Float64 = 1e-3, target_tol::Float64 = 1e-4, max_iter::Int64 = 10)::Float64 where T<:Function
+
+        x0, x1  =   xInitials
+        y0, y1  =   yInitials
+        
+        for i in 1:max_iter
+            x  =   x1 - (x1 - x0) * (y1 - target) / (y1 - y0)
+            check   =   f(x, args...)
+
+            if abs(check - target) < target_tol || abs(x - x1) < x_tol
+                break
+            end
+
+            x0, x1  =   x1, x
+            y0, y1  =   y1, check
+        end
+    
+        return x
     end
 
 
@@ -255,6 +283,13 @@ PBC   : vector of boolean with length = spatial dimensions = rank of f ---> if t
     end
 
 
+@doc """
+```julia
+SegmentIntersection(SegmentPoints::Vector{Vector{Float64}}, LinePoints::Vector{Vector{Float64}})-->Float64
+```
+Given two points on a line and two points on a segment, returns the parameter t such that the intersection point is given by (1-t) * SegmentPoints[1] + t * SegmentPoints[2]. 
+If the intersection point is not on the segment, returns a value outside the range [0, 1].
+"""
     function SegmentIntersection(SegmentPoints::Vector{Vector{Float64}}, LinePoints::Vector{Vector{Float64}})::Float64
 
         M1, M2  =   SegmentPoints
@@ -269,6 +304,40 @@ PBC   : vector of boolean with length = spatial dimensions = rank of f ---> if t
 
         return t
     end
+
+    function Linearize(Ns::Tuple{Int64, Int64}, index::Tuple{Int64})::Int64
+
+        return Ns[2] * (index[1] - 1) + index[2]
+    end
+
+    function SwitchKroneckerBasis(Ns::Tuple{Int64, Int64})::Vector{Int64}
+
+        indices     =   Meshgrid(collect(Ns))
+        indices     =   vcat(indices...)
+        order       =   Linearize.(Ref(Ns), indices)
+
+        return order
+    end
+
+
+    function ImpIndices(A::Matrix{Float64}, sizeB::Tuple{Int64, Int64})::Vector{Tuple{Int64, Int64}}
+        inds = Tuple{Int64, Int64}[]
+
+        for (i, j) in Meshgrid(collect(sizeB))
+
+            B = zeros(Float64, sizeB...)
+            B[i, j] = 1.0
+
+            C = B * A
+
+            if sum(.!(isapprox.(C, zeros(Float64, size(C))))) > 0   ##### if the matrix product is not zero => this element of B can lead to non-zero result
+                push!(inds, (i, j))
+            end
+        end
+
+        return inds
+    end
+
 
 
 end
