@@ -1,9 +1,10 @@
 name = "TightBindingToolkit"
 uuid = "2233325a-6eb3-486f-aff0-670e0939fa7e"
 authors = ["Anjishnu Bose", "Sreekar Voleti", "Samuel Vadnais"]
-version = "2.3.0"
+version = "2.3.2"
 
 [deps]
+Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -24,9 +25,9 @@ MappedArrays = "^0.4"
 Plots = "^1.38"
 PyPlot = "2.11"
 Statistics = "1.0 - 2.0"
+StatsBase = "^0.34"
 TensorCast = "^0.4"
 Tullio = "^0.3"
-StatsBase = "^0.34"
 julia = "^1.7, ^1.9"
 
 [extras]

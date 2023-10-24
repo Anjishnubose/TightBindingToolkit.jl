@@ -7,7 +7,7 @@ module BdG
     using ..TightBindingToolkit.BZone:BZ, MomentumPhaseFFT
     using ..TightBindingToolkit.Hams:Hamiltonian, ModifyHamiltonianField!
     
-    using LinearAlgebra, Tullio, TensorCast, Logging
+    using LinearAlgebra, Tullio, TensorCast, Logging, Statistics
 
     import ..TightBindingToolkit.TBModel:FindFilling, GetMu!, GetFilling!, GetGk!, GetGr!, SolveModel!, GetGap!, FreeEnergy
 
@@ -108,8 +108,8 @@ GetMu!(M::BdGModel ;  tol::Float64=0.001)
 ```
 Function to get the correct chemical potential given a filling.
 """
-    function GetMu!(M::BdGModel ;  mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
-        M.mu    =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M,) ; x_tol = mu_tol, target_tol = filling_tol)
+    function GetMu!(M::BdGModel ;  guess::Float64 = 0.0, mu_tol::Float64 = 0.001, filling_tol::Float64 = 1e-6)
+        M.mu    =   BinarySearch(M.filling, M.Ham.bandwidth, FindFilling, (M,) ; initial = guess, x_tol = mu_tol, target_tol = filling_tol)
         @info "Found chemical potential μ = $(M.mu) for given filling = $(M.filling)."
     
     end
@@ -169,13 +169,13 @@ SolveModel!(M::BdGModel)
 ```
 one-step function to find all the attributes in  BdGModel after it has been initialized.
 """
-    function SolveModel!(M::BdGModel ; get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
+    function SolveModel!(M::BdGModel ; mu_guess::Float64 = M.Ham.bandwidth[1] + M.filling * (M.Ham.bandwidth[2] - M.Ham.bandwidth[1]), get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==true "Use other format for pure hopping Hamiltonian"
 
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
             GetFilling!(M)
         else
-            GetMu!(M ; mu_tol = mu_tol, filling_tol = filling_tol)
+            GetMu!(M ; guess = mu_guess, mu_tol = mu_tol, filling_tol = filling_tol)
         end
 
         if get_gap

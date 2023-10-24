@@ -40,7 +40,7 @@ export CreateLattice, ModifyLattice!, ScaleLatticeBonds!, ScaleLattice!, RemoveL
 
 include("Flux.jl")
 using .Flux
-export GetBondPhase, CheckGaugeValidity, ModifyGauge!
+export GetBondPhase, CheckGaugeValidity, ModifyGauge!, GetStringPhase, InsertMonopolePair!
 
 ##### Module to define Brillouin Zone structure and some functions to manipulate it.
 include("BZ.jl")
@@ -54,7 +54,7 @@ export Hamiltonian , FillHoppingHamiltonian, FillPairingHamiltonian, FillHamilto
 
 include("LatticeHamiltonian.jl")
 using .LatHam
-export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!, Slater, SingleParticleFidelity, SlaterOverlap
+export FillHamiltonian, LatticeHamiltonian, DiagonalizeHamiltonian!, Slater, SingleParticleFidelity, SlaterOverlap, GaugeFix!
 
 ##### Module to define a Tight-Binding Model structure which takes into account thermodynamical parameters such as temperature and filling etc.
 include("Model.jl")
