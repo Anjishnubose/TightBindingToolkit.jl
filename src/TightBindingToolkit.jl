@@ -38,9 +38,17 @@ include("DesignLattice.jl")
 using .DesignLattice
 export CreateLattice, ModifyLattice!, ScaleLatticeBonds!, ScaleLattice!, RemoveLatticeBonds!
 
+include("Plaquettes.jl")
+using .Plaqs
+export Plaquette, PlaquetteParam, AddIsotropicPlaquettes!, GetPlaquetteFlux, GetPlaquetteSites
+
 include("Flux.jl")
 using .Flux
 export GetBondPhase, CheckGaugeValidity, ModifyGauge!, GetStringPhase, InsertMonopolePair!
+
+include("Gauge.jl")
+using .Gauge
+export LandauGauge, RadialGauge
 
 ##### Module to define Brillouin Zone structure and some functions to manipulate it.
 include("BZ.jl")
@@ -83,7 +91,7 @@ export FindLinks , FieldStrength , ChernNumber, CheckValidity, PartialChernNumbe
 ##### Module to calculate generalized magnetic susceptibility
 include("Susceptibility.jl")
 using .suscep
-export Susceptibility , FindChi , FillChis!
+export Susceptibility , FindChi , FillChis!, FillRPAChis!, PerformRPA!, FindReducedChi, nF_factor, ResolvedQInteraction
 
 ##### Module to calculate generalized electrical conductivity
 include("Conductivity.jl")
