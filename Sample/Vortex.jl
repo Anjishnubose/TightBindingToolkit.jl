@@ -25,7 +25,7 @@ AddBasisSite!.(Ref(UC), [b1, b2, b3, b4, b5, b6])
 SpinVec     =   SpinMats(1//2)
 
 const tIntra  =     1.0
-const tInter  =     -1.5
+const tInter  =     -0.1
 
 tIntraParam     =   Param(tIntra, 2)
 AddAnisotropicBond!(tIntraParam, UC, 1, 2, [ 0, 0], SpinVec[4], firstNNdistance, "Intra hopping")
@@ -48,7 +48,7 @@ CreateUnitCell!(UC, [tIntraParam, tInterParam])
 
 # Plot_UnitCell!(UC ; bond_cmp=:viridis, site_size=10.0, plot_conjugate=false, plot_lattice=true)
 
-kSize   =   6*50 + 3
+kSize   =   6*50
 bz      =   BZ([kSize, kSize])
 FillBZ!(bz, UC)
 
@@ -79,15 +79,25 @@ R2      =   kron(R2, Matrix(I, 2, 2))
 Gammaind=   GetQIndex(bz.HighSymPoints["G"], bz)
 K1ind   =   GetQIndex(bz.HighSymPoints["K1"], bz)
 K2ind   =   GetQIndex(bz.HighSymPoints["K2"], bz)
+M1ind   =   GetQIndex(bz.HighSymPoints["-M1"], bz)
+M2ind   =   GetQIndex(bz.HighSymPoints["-M2"], bz)
+M3ind   =   GetQIndex(bz.HighSymPoints["-M3"], bz)
 
 OrbitalsGamma   =   H.states[Gammaind...]
 OrbitalsK1  =   H.states[K1ind...]
 OrbitalsK2  =   H.states[K2ind...]
+OrbitalsM1  =   H.states[M1ind...]
+OrbitalsM2  =   H.states[M2ind...]
+OrbitalsM3  =   H.states[M3ind...]
 
-REigGamma   =   eigen((OrbitalsGamma' * R3 * OrbitalsGamma)[1:6, 1:6]).values
-REigK1      =   eigen((OrbitalsK1' * R3 * OrbitalsK1)[1:6, 1:6]).values
-REigK2      =   eigen((OrbitalsK2' * R3 * OrbitalsK2)[1:6, 1:6]).values
+# REigGamma   =   eigen((OrbitalsGamma' * R3 * OrbitalsGamma)[1:6, 1:6]).values
+# REigK1      =   eigen((OrbitalsK1' * R3 * OrbitalsK1)[1:6, 1:6]).values
+# REigK2      =   eigen((OrbitalsK2' * R3 * OrbitalsK2)[1:6, 1:6]).values
 
+REigGamma   =   eigen((OrbitalsGamma' * R2 * OrbitalsGamma)[1:6, 1:6]).values
+REigM1      =   eigen((OrbitalsM1' * R2 * OrbitalsM1)[1:6, 1:6]).values
+REigM2      =   eigen((OrbitalsM2' * R2 * OrbitalsM2)[1:6, 1:6]).values
+REigM3      =   eigen((OrbitalsM3' * R2 * OrbitalsM3)[1:6, 1:6]).values
 
 
 # Plot_FS!(H, bz, collect(0.05:0.05:0.5), [7]; cbar=true)
