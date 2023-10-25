@@ -18,6 +18,7 @@ secondNNdistance    = 1.0
 thirdNNdistance     = 2/sqrt(3)
 
 UC      =   UnitCell([a1, a2], 2, 2)
+UC.BC   =   zeros(ComplexF64, 2)
 UC.BC   =   [0.0, 0.0]
 
 AddBasisSite!.(Ref(UC), [b1, b2, b3, b4, b5, b6])
@@ -25,7 +26,8 @@ AddBasisSite!.(Ref(UC), [b1, b2, b3, b4, b5, b6])
 SpinVec     =   SpinMats(1//2)
 
 const tIntra  =     1.0
-const tInter  =     -0.1
+const tInter  =     -10.0
+const tInter  =     -1.5
 
 tIntraParam     =   Param(tIntra, 2)
 AddAnisotropicBond!(tIntraParam, UC, 1, 2, [ 0, 0], SpinVec[4], firstNNdistance, "Intra hopping")
@@ -46,7 +48,7 @@ CreateUnitCell!(UC, [tIntraParam, tInterParam])
 
 ###################### k-Space #################################
 
-# Plot_UnitCell!(UC ; bond_cmp=:viridis, site_size=10.0, plot_conjugate=false, plot_lattice=true)
+UCPlot = Plot_UnitCell!(UC ; bond_cmp=:viridis, site_size=10.0, plot_conjugate=false, plot_lattice=true)
 
 kSize   =   6*50
 bz      =   BZ([kSize, kSize])
@@ -114,13 +116,21 @@ REigM3      =   eigen((OrbitalsM3' * R2 * OrbitalsM3)[1:6, 1:6]).values
 # DiagonalizeHamiltonian!(H)
 
 # plot(H.bands, marker = :circle, label = "Energies")
+Plot_Lattice!(lattice ; bond_cmp=:viridis, site_size=10.0)
 
 # M   =   LatticeModel(lattice, H)
 
+# ######################## Symmetry ##########################
+
+# Ta1 = Translations(lattice ; primitive  = 1, with_local = true)
+# Ta2 = Translations(lattice ; primitive  = 2, with_local = true)
 # Ta1 = Translations(lattice ; primitive  = 1, with_local = true)
 # Ta2 = Translations(lattice ; primitive  = 2, with_local = true)
 
 # m1 = GetPhase.(FindQuantumNumbers(M, Ta1 ; till_band = length(H.bands)÷2))
 # m2 = GetPhase.(FindQuantumNumbers(M, Ta2 ; till_band = length(H.bands)÷2))
+# m1 = GetPhase.(FindQuantumNumbers(M, Ta1 ; till_band = length(H.bands)÷2))
+# m2 = GetPhase.(FindQuantumNumbers(M, Ta2 ; till_band = length(H.bands)÷2))
 
+# mGround = mod.([sum(sum.(m1)), sum(sum.(m2))], Ref(1.0))
 # mGround = mod.([sum(sum.(m1)), sum(sum.(m2))], Ref(1.0))
