@@ -305,7 +305,7 @@ If the intersection point is not on the segment, returns a value outside the ran
         return t
     end
 
-    function Linearize(Ns::Tuple{Int64, Int64}, index::Tuple{Int64})::Int64
+    function Linearize(Ns::Tuple{Int64, Int64}, index::Tuple{Int64, Int64})::Int64
 
         return Ns[2] * (index[1] - 1) + index[2]
     end
