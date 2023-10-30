@@ -1,4 +1,6 @@
-using Plots, LaTeXStrings, TightBindingToolkit
+using Plots, LaTeXStrings#, TightBindingToolkit
+include("../src/TightBindingToolkit.jl")
+using .TightBindingToolkit
 
 """
 This script sets up a simple triangular lattice with first, second, and third neighbour hoppings.
@@ -27,17 +29,29 @@ const t1  =   -1.0
 const NNdistance  =   1.0
 AddIsotropicBonds!(UC , NNdistance, t1 * SpinVec[4] , "t1")
 ############### 2nd Nearest Neighbour #################
-const t2  =   0.25
+const t2  =   0.0
 const secondNNdistance  =   sqrt(3)
 AddIsotropicBonds!(UC , secondNNdistance, t2 * SpinVec[4] , "t2" ; checkOffsetRange = 2)
 ############### 3rd Nearest Neighbour #################
-const t3  =   -0.25
+const t3  =   -0.0
 const thirdNNdistance  =   2.0
 AddIsotropicBonds!(UC , thirdNNdistance, t3 * SpinVec[4] , "t3", checkOffsetRange = 3)
 
+""" 
+Interaction on the lattice
+"""
+JMatrix =   zeros(Float64, 4, 4)
+JMatrix[1, 1]   =   1.0
+JMatrix[2, 2]   =   1.0
+JMatrix[3, 3]   =   1.0
+
+JParam  =   Param(1.0, 2)
+AddIsotropicBonds!(JParam, UC, NNdistance, JMatrix, "NN Heisenberg")
+
+
 
 ##### BZ with size kSize
-const n       =   30
+const n       =   40
 const kSize   =   6 * n + 3
 bz            =   BZ(kSize)
 FillBZ!(bz, UC)
@@ -46,7 +60,7 @@ FillBZ!(bz, UC)
 Some model parameters : temperature and chemical potential
 """
 const T     =   0.001
-const mu    =   0.0   
+const mu    =   1.0   
 H       =   Hamiltonian(UC, bz)
 DiagonalizeHamiltonian!(H)
 p = Plot_UnitCell!(UC ; range=2)
@@ -64,17 +78,18 @@ A path in the discretized BZ which goes through Γ -> K -> M -> Γ.
 """
 path = CombinedBZPath(bz, kPoints ; nearest=true)
 
-band_structure  =   Plot_Band_Structure!(TriangleModel, kPoints ; labels = [L"$\Gamma$", L"$K_1$", L"$M_2$"])
-FS              =   Plot_FS!(TriangleModel.Ham , TriangleModel.bz , [TriangleModel.mu] , [1])
+# band_structure  =   Plot_Band_Structure!(TriangleModel, kPoints ; labels = [L"$\Gamma$", L"$K_1$", L"$M_2$"])
+# FS              =   Plot_FS!(TriangleModel.Ham , TriangleModel.bz , [TriangleModel.mu] , [1])
 
 Omegas  =   [0.0]
 const spread  = 5e-3  
 # dos = DOS(Omegas, H)    ##### the single particle density of states
 
-suscep  =   Susceptibility(TriangleModel, path, Omegas ; eta=spread)
-FillChis!(suscep)
+suscep  =   Susceptibility(path, Omegas, TriangleModel ; eta=spread)
+# FillChis!(suscep, TriangleModel)
+FillRPAChis!(suscep, TriangleModel, JParam ; Generators = [[1, 1], [2, 2], [3, 3]])
 ##### Plotting the real part of the magnetic susceptibility at 0 energy, and momentum points along the path.
-plot(real.(suscep.chis["zz"][1, :]), labels="χ_zz(Ω=0, Q)", lw=2.0, markershape=:circle, markercolor="red")
+# plot(real.(suscep.chis["zz"][1, :]), labels="χ_zz(Ω=0, Q)", lw=2.0, markershape=:circle, markercolor="red")
 
 
 
