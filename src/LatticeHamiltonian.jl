@@ -7,6 +7,12 @@ module LatHam
     using LinearAlgebra
 
 
+@doc """
+```julia
+FillHamiltonian( lattice::Lattice{2} )
+```
+Fills the Hamiltonian matrix for a given `Lattice` object using the bonds stored in the `Lattice` object.
+"""
     function FillHamiltonian( lattice::Lattice{2} )
 
         localDim    = lattice.uc.localDim
@@ -18,13 +24,13 @@ module LatHam
             Ham[localDim * (site - 1) + 1 : localDim * (site), localDim * (site - 1) + 1 : localDim * (site)] += sum( lattice.fields[site] .* lattice.uc.OnSiteMats )
 
             ############# Bond terms
-            for neighbour in 1:length(lattice.BondSites[site, :])
+            for neighbour in 1:length(lattice.bondSites[site, :])
 
-                if lattice.BondSites[site , neighbour] != 0
-                    Ham[ localDim*(site-1) + 1 : localDim*(site) , localDim*(lattice.BondSites[site, neighbour]-1) + 1 : localDim*(lattice.BondSites[site, neighbour]) ] += lattice.BondMats[site, neighbour]
+                if lattice.bondSites[site , neighbour] != 0
+                    Ham[ localDim*(site-1) + 1 : localDim*(site) , localDim*(lattice.bondSites[site, neighbour]-1) + 1 : localDim*(lattice.bondSites[site, neighbour]) ] += lattice.bondMats[site, neighbour]
                     
-                    if lattice.BondDists[site, neighbour] > 0.0
-                        Ham[ localDim*(lattice.BondSites[site, neighbour]-1) + 1 : localDim*(lattice.BondSites[site, neighbour])  , localDim*(site-1) + 1 : localDim*(site)] += adjoint(lattice.BondMats[site, neighbour])
+                    if lattice.bondDists[site, neighbour] > 0.0
+                        Ham[ localDim*(lattice.bondSites[site, neighbour]-1) + 1 : localDim*(lattice.bondSites[site, neighbour])  , localDim*(site-1) + 1 : localDim*(site)] += adjoint(lattice.bondMats[site, neighbour])
                     end
                 end
             end 
@@ -33,7 +39,21 @@ module LatHam
         return Ham
     end
 
+@doc """
+`LatticeHamiltonian` is a data type representing a general real-space Hamiltonian constructed using a `Lattice` object.
 
+# Attributes
+- `H           ::      Matrix{ComplexF64}`: Hamiltonian matrix.
+- `bands       ::      Vector{Float64}`: eigenvalues of the Hamiltonian.
+- `states      ::      Matrix{ComplexF64}`: eigenvectors of the Hamiltonian.
+- `is_BdG      ::      Bool`: whether the Hamiltonian is a BdG Hamiltonian or not.
+- `bandwidth   ::      Tuple{Float64, Float64}`: minimum and maximum eigenvalues of the Hamiltonian.
+
+Initialize this structure using 
+```julia
+LatticeHamiltonian( lattice::Lattice{2} )
+```
+"""
     mutable struct LatticeHamiltonian
 
         H           ::      Matrix{ComplexF64}
@@ -52,6 +72,13 @@ module LatHam
     end
 
 
+@doc """
+```julia
+DiagonalizeHamiltonian!(H::LatticeHamiltonian)
+```
+Diagonalizes the Hamiltonian stored in `H` and stores the eigenvalues and eigenvectors in `H.bands` and `H.states` respectively.
+Calculates the bandwidth too.
+"""
     function DiagonalizeHamiltonian!(H::LatticeHamiltonian)
 
         sol        =   eigen(Hermitian(H.H))
