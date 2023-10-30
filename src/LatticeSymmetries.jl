@@ -16,8 +16,8 @@ module LatticeSymmetries
 
         for j in 1:lattice.length
 
-            translated  =   mod.(lattice.positions[j][end][end] + id[primitive, :], lattice.size)
-            Ta[lattice.sites[(lattice.positions[j][end][1], translated)], j]     =   1.0
+            translated  =   mod.(lattice.sites[j][end] + id[primitive, :], lattice.size)
+            Ta[lattice.sites((lattice.sites[j][begin], translated)), j]     =   1.0
         end
 
         if with_local
