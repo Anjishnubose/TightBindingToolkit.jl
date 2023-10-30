@@ -70,22 +70,22 @@ Susceptibility(M::Model , Qs::Vector{Vector{Float64}}, Omegas::Vector{Float64} ;
                 Qs      =   [zeros(Float64, length(M.uc.primitives))]
             end
 
-            Bare    =   repeat([zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
-            BareReduced     =   repeat([zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
+            Bare    =   [zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
+            BareReduced     =   [zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
 
-            RPA    =   repeat([zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
-            RPAReduced  =   repeat([zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
+            RPA    =   [zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
+            RPAReduced  =   [zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
 
             return new{}(Qs, Omegas, eta, Bare, BareReduced, RPA, RPAReduced)
         end
 
         function Susceptibility(Qs::Vector{Vector{Float64}}, Omegas::Vector{Float64},  M::Model;  eta::Float64 = 1e-2) 
             
-            Bare    =   repeat([zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
-            BareReduced     =   repeat([zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
+            Bare    =   [zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
+            BareReduced     =   [zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
 
-            RPA    =   repeat([zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
-            RPAReduced  =   repeat([zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats))], length(Omegas), length(Qs))
+            RPA    =   [zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.basis) * length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
+            RPAReduced  =   [zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)) for i in 1:length(Omegas), j in 1:length(Qs)]
 
             return new{}(Qs, Omegas, eta, Bare, BareReduced, RPA, RPAReduced)
         end
@@ -161,15 +161,15 @@ function to calculate susceptibility at a fixed Ω=`Omega`, and `Q`, and along a
             for (j, target) in enumerate(M.uc.basis)
 
                 Uis     =   selectdim.(Uk, 1, Ref((i - 1) * M.uc.localDim + 1 : i * M.uc.localDim))
-                Ujs     =   selectdim.(adjoint.(Uk), 2, Ref((j - 1) * M.uc.localDim + 1 : j * M.uc.localDim))
+                Ujs     =   selectdim.(Uk, 1, Ref((j - 1) * M.uc.localDim + 1 : j * M.uc.localDim))
 
                 UisQ    =   selectdim.(adjoint.(UkQ), 2, Ref((i - 1) * M.uc.localDim + 1 : i * M.uc.localDim))
-                UjsQ    =   selectdim.(UkQ, 1, Ref((j - 1) * M.uc.localDim + 1 : j * M.uc.localDim))
+                UjsQ    =   selectdim.(adjoint.(UkQ), 2, Ref((j - 1) * M.uc.localDim + 1 : j * M.uc.localDim))
 
                 Ma      =   reshape(UisQ .* Ref(M.uc.OnSiteMats[a]) .* Uis, length(M.Ham.bands))
-                Mb      =   reshape(Ujs .* Ref(M.uc.OnSiteMats[b]) .* UjsQ, length(M.Ham.bands))
+                Mb      =   reshape(UjsQ .* Ref(M.uc.OnSiteMats[b]) .* Ujs, length(M.Ham.bands))
 
-                @tullio chi     :=   - Ma[k][i, j] * Mb[k][i, j] * nF[k][j, i]
+                @tullio chi     :=   - Ma[k][i, j] * conj(Mb[k][i, j]) * nF[k][j, i]
                 chiMat[i, j]    +=  chi
             end
         end
@@ -185,7 +185,7 @@ function to calculate susceptibility at a fixed Ω=`Omega`, and `Q`, and along a
         permutation     =   SwitchKroneckerBasis((length(uc.OnSiteMats), length(uc.basis)))
         map!(x -> x[permutation, permutation], resolvedInts, resolvedInts)  ##### Switching the basis of the resolved interactions to be a vector of matrices into the generator x sublattice index
         resolvedInts    =   permutedims(reshape(repeat(resolvedInts, length(chi.Omegas)), (length(chi.Qs), length(chi.Omegas))), [2, 1])    ##### Repeating the resolved interactions to be a matrix of matrices, with the outermatrix having the (energy, momentum) index, and the inner being sublattice x Generator index.
-        corrections     =   inv.(Ref(I) .- (resolvedInts .* chi.Bare))  ##### The RPA corrections to the bare susceptibility coming from resummation
+        corrections     =   inv.(Ref(I) .+ (resolvedInts .* chi.Bare))  ##### The RPA corrections to the bare susceptibility coming from resummation
         chi.RPA         =   chi.Bare .* corrections  ##### The RPA susceptibility
     end
 
@@ -204,24 +204,22 @@ function to calculate susceptibility at a all given Ω=`Omegas`, but for all `Q`
             chis    =   FindReducedChi.(chi.Omegas, reshape(chi.Qs, 1, length(chi.Qs)), Ref(M), ; a=a, b=b, eta=chi.Spread)
             chis    =   chis ./ length(M.bz.ks)
 
-            chisTot     =   [zeros(ComplexF64, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)) for i in 1:length(chi.Omegas), j in 1:length(chi.Qs)]
-            setindex!.(chisTot, chis, Ref(CartesianIndex(a, b)))
-            chi.BareReduced     =   chisTot
+            setindex!.(chi.BareReduced, chis, Ref(CartesianIndex(a, b)))
+            @info "sublattice reduced bare Chis filled along $(a)-$(b)."
 
         else    ##### Calculate the sublattice resolved susceptibility
             chis    =   FindChi.(chi.Omegas, reshape(chi.Qs, 1, length(chi.Qs)), Ref(M), ; a=a, b=b, eta=chi.Spread)
             chis    =   chis ./ length(M.bz.ks)
-            ##### Setting the appropriate indices of the susceptibility matrix which is generator x sublattice.
-            for (i, base) in enumerate(M.uc.basis)
-                for (j, target) in enumerate(M.uc.basis)
 
-                    setindex!.(chi.Bare, getindex.(chis, i, j), Ref(CartesianIndex(length(M.uc.basis) * (a - 1) + i, length(M.uc.basis) * (b - 1) + j)))
-                end
+            inds    =   Ref(length(M.uc.basis) * (a - 1)) .+ collect(1:length(M.uc.basis))
+            ##### Setting the appropriate indices of the susceptibility matrix which is generator x sublattice.
+            for i in 1:length(chi.Omegas), j in 1:length(chi.Qs)
+                chi.Bare[i, j][inds, inds]    =   chis[i, j]
             end
 
+            @info "bare Chis filled along $(a)-$(b)."
         end
-        
-        @info "Chis filled along $(a)-$(b)."
+    
     end
 
 
