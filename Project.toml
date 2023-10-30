@@ -28,6 +28,7 @@ Statistics = "1.0 - 2.0"
 StatsBase = "^0.34"
 TensorCast = "^0.4"
 Tullio = "^0.3"
+Bijections = "^0.1"
 julia = "^1.7, ^1.9"
 
 [extras]
