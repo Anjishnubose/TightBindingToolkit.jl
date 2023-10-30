@@ -51,9 +51,6 @@ If given `mat` attribute is a number, it is converted into a 1x1 matrix when ent
 
 """
     function AddAnisotropicBond!( param::Param{T, R}, uc::UnitCell{T2} , base::Int64 , target::Int64 , offset::Vector{Int64} , mat::Array{<:Number, T} , dist::Float64, label::String ) where {T, R, T2}
-
-        dims 	=	repeat([uc.localDim], T)
-        @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
     
         if base <= length(uc.basis) && target <= length(uc.basis)
             if norm( sum(offset .* uc.primitives) .+ (uc.basis[target] .- uc.basis[base] ) ) ≈ dist
@@ -94,9 +91,7 @@ The optional input `subs` is meant for isotropic bonds when only a subset of sub
 
 """    
     function AddIsotropicBonds!( param::Param{T, R}, uc::UnitCell{T2} , dist::Float64 , mat::Array{<:Number, T} , label::String; checkOffsetRange::Int64=2 , subs::Vector{Int64}=collect(1:length(uc.basis)) ) where {T, R, T2}
-    
-        dims 	=	repeat([uc.localDim], T)
-        @assert size(mat) == Tuple(dims) "Interaction matrix has the wrong dimension!"
+
         offsets 		=	GetAllOffsets(checkOffsetRange, length(uc.primitives))    
     
         for i in subs
@@ -311,6 +306,9 @@ Returns a lookup dictionary for a vector of parameters, instead of a unit cell (
 
 		return lookupTable
     end
+
+    ##### TODO : Add a function which takes in a bond, and a vector of Params, and checks if that given bond  object exists anywhere in the list of unitBonds in the Param object.
+
 
 
 end
