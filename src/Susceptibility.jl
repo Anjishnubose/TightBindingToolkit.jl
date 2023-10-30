@@ -1,5 +1,5 @@
 module suscep
-    export Susceptibility , FindChi , FillChis!, FillRPAChis!, PerformRPA!, FindReducedChi, nF_factor, ResolvedQInteraction
+    export Susceptibility , FindChi , FillChis!, FillRPAChis!, PerformRPA!, FindReducedChi, nF_factor, ResolvedQInteraction, ReduceChis!
 
     using ..TightBindingToolkit.SpinMatrices:SpinMats
     using ..TightBindingToolkit.Useful: DistFunction, SwitchKroneckerBasis, ImpIndices
@@ -178,13 +178,16 @@ function to calculate susceptibility at a fixed Ω=`Omega`, and `Q`, and along a
     end
 
 
-    function PerformRPA!(chi::Susceptibility, GeneratorInteraction::Param{2, Float64}, uc::UnitCell{T}) where {T}
+    function PerformRPA!(chi::Susceptibility, GeneratorInteractions::Vector{Param{2, Float64}}, uc::UnitCell{T}) where {T}
         ##### GeneratorInteraction refers to the interaction written in the basis of all the generators of the local Hilbert space (including the identity matrix). Eg. Id + SU(2) spins -> GeneratorInteraction is a 4x4 matrix.
-        resolvedInts    =   ResolvedQInteraction.(chi.Qs, Ref(GeneratorInteraction), Ref(uc))
+        resolvedInts    =   sum([ResolvedQInteraction.(chi.Qs, Ref(interaction), Ref(uc)) for interaction in GeneratorInteractions])
         resolvedInts    =   map(x -> hvcat(length(uc.basis), permutedims(x, [2, 1])...), resolvedInts)  ##### Reshaping the resolved interactions to be a vector of matrices, with the first index being the momentum index, and the second being the sublattice x Generator index.
+        
         permutation     =   SwitchKroneckerBasis((length(uc.OnSiteMats), length(uc.basis)))
         map!(x -> x[permutation, permutation], resolvedInts, resolvedInts)  ##### Switching the basis of the resolved interactions to be a vector of matrices into the generator x sublattice index
+        
         resolvedInts    =   permutedims(reshape(repeat(resolvedInts, length(chi.Omegas)), (length(chi.Qs), length(chi.Omegas))), [2, 1])    ##### Repeating the resolved interactions to be a matrix of matrices, with the outermatrix having the (energy, momentum) index, and the inner being sublattice x Generator index.
+        
         corrections     =   inv.(Ref(I) .+ (resolvedInts .* chi.Bare))  ##### The RPA corrections to the bare susceptibility coming from resummation
         chi.RPA         =   chi.Bare .* corrections  ##### The RPA susceptibility
     end
@@ -223,15 +226,28 @@ function to calculate susceptibility at a all given Ω=`Omegas`, but for all `Q`
     end
 
 
-    function FillRPAChis!(chi::Susceptibility, M::Model, GeneratorInteraction::Param{2, Float64} ; Generators::Vector{Vector{Int64}} = [[i, i] for i in 1:length(M.uc.OnSiteMats)])
+    function FillRPAChis!(chi::Susceptibility, M::Model, GeneratorInteractions::Vector{Param{2, Float64}} ; Generators::Vector{Vector{Int64}} = [[i, i] for i in 1:length(M.uc.OnSiteMats)])
 
         for generator in Generators
             FillChis!(chi, M, ; a=generator[1], b=generator[2], reduce=false)
         end
 
-        PerformRPA!(chi, GeneratorInteraction, M.uc)
+        PerformRPA!(chi, GeneratorInteractions, M.uc)
 
         @info "RPA performed!."
+    end
+
+
+    function ReduceChis!(chi::Susceptibility, M::Model)
+
+        subPhases   =   [zeros(ComplexF64, length(M.uc.basis) * length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)) for i in 1:length(chi.Omegas), j in 1:length(chi.Qs)]
+        
+        for i in 1:length(chi.Omegas), j in 1:length(chi.Qs)
+            subPhases[i, j]     =   kron(Matrix{ComplexF64}(I, length(M.uc.OnSiteMats), length(M.uc.OnSiteMats)), exp.(im .* dot.(Ref(chi.Qs[j]) , M.uc.basis)))
+        end
+
+        chi.BareReduced   =   adjoint.(subPhases) .* chi.Bare .* subPhases
+        chi.RPAReduced    =   adjoint.(subPhases) .* chi.RPA .* subPhases
     end
 
 

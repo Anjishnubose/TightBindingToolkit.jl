@@ -91,7 +91,7 @@ export FindLinks , FieldStrength , ChernNumber, CheckValidity, PartialChernNumbe
 ##### Module to calculate generalized magnetic susceptibility
 include("Susceptibility.jl")
 using .suscep
-export Susceptibility , FindChi , FillChis!, FillRPAChis!, PerformRPA!, FindReducedChi, nF_factor, ResolvedQInteraction
+export Susceptibility , FindChi , FillChis!, FillRPAChis!, PerformRPA!, FindReducedChi, nF_factor, ResolvedQInteraction, ReduceChis!
 
 ##### Module to calculate generalized electrical conductivity
 include("Conductivity.jl")
