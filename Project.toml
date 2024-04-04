@@ -1,7 +1,7 @@
 name = "TightBindingToolkit"
 uuid = "2233325a-6eb3-486f-aff0-670e0939fa7e"
 authors = ["Anjishnu Bose", "Sreekar Voleti", "Samuel Vadnais"]
-version = "2.3.3"
+version = "2.3.4"
 
 [deps]
 Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
@@ -29,8 +29,8 @@ StatsBase = "^0.34"
 TensorCast = "^0.4"
 Tullio = "^0.3"
 Bijections = "^0.1"
-julia = "^1.7, ^1.9"
-LinearAlgebra = "^1.7, ^1.9"
+julia = "^1.6, ^1.9"
+LinearAlgebra = "^1.6, ^1.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

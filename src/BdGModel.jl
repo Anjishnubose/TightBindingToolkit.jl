@@ -75,6 +75,8 @@ Because of this, if you want to calculate the filling at a different chemical po
         Eks     =   reshape(getindex.(M.Ham.bands, Ref(1:N÷2)), prod(M.bz.gridSize))
         U11s    =   reshape(getindex.(M.Ham.states, Ref(1:N÷2), Ref(1:N÷2)), prod(M.bz.gridSize))
         U21s    =   reshape(getindex.(M.Ham.states, Ref(N÷2 + 1: N), Ref(1:N÷2)), prod(M.bz.gridSize))
+        U12s    =   reshape(getindex.(M.Ham.states, Ref(1:N÷2), Ref(N÷2 + 1: N)) , prod(M.bz.gridSize))
+        U22s    =   reshape(getindex.(M.Ham.states, Ref(N÷2 + 1: N), Ref(N÷2 + 1: N)) , prod(M.bz.gridSize))
 
         nFs     =   DistFunction.(Eks; T=M.T, mu=0.0, stat=M.stat)
 
@@ -134,7 +136,7 @@ Finding the Greens functions, and anomalous greens functions in momentum space a
         nFs     =   DistFunction.(Eks; T=M.T, mu=0.0, stat=M.stat)
 
         @reduce Gk[k1][i, j] |= sum(l) ((conj(U11s[k1][i, l]) * U11s[k1][j, l] * nFs[k1][l])
-                                      + (conj(U12s[k1][i, l]) * U12s[k1][j, l] * (1 - nFs[k1][l])))
+                                      + (conj(U21s[k1][i, l]) * U21s[k1][j, l] * (1 - nFs[k1][l])))
 
         @reduce Fk[k1][i, j] |= sum(l) ((conj(U11s[k1][i, l]) * U21s[k1][j, l] * nFs[k1][l])
                                       + (conj(U12s[k1][i, l]) * U22s[k1][j, l] * (1 - nFs[k1][l])))
@@ -171,7 +173,8 @@ one-step function to find all the attributes in  BdGModel after it has been init
 """
     function SolveModel!(M::BdGModel ; mu_guess::Float64 = 2*M.Ham.bandwidth[1] + 2*M.filling * (M.Ham.bandwidth[2] - M.Ham.bandwidth[1]), get_correlations::Bool = true, get_gap::Bool = false, verbose::Bool = true, mu_tol::Float64 = 1e-3, filling_tol::Float64 = 1e-6)
         @assert M.Ham.is_BdG==true "Use other format for pure hopping Hamiltonian"
-
+        # println(mu_guess)
+        # println(M.Ham.bandwidth)
         if M.filling<0    ##### Must imply that filling was not provided by user and hence needs to be calculated from given mu
             GetFilling!(M)
         else
