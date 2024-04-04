@@ -1,7 +1,9 @@
 module Chern
-    export FindLinks , FieldStrength , ChernNumber, CheckValidity, PartialChernNumber, FilledChernNumber
+    export FindLinks , FieldStrength , ChernNumber, CheckValidity, PartialChernNumber, FilledChernNumber, OccupiedChernNumber, KuboChern
 
-    using ..TightBindingToolkit.Hams:Hamiltonian, IsBandGapped
+    using ..TightBindingToolkit.Hams:Hamiltonian, IsBandGapped, GetVelocity!
+    using ..TightBindingToolkit.Useful: DistFunction
+    using ..TightBindingToolkit.BZone:BZ
 
     using LinearAlgebra
 
@@ -21,7 +23,7 @@ On a bond connecting k_i and k_j, the linking matrix U is defined such that U[m,
         Link_1        =   det.(selectdim.(adjoint.(Ham.states), 1, Ref(subset)) .* selectdim.(shifted_1, 2, Ref(subset)))
         Link_2        =   det.(selectdim.(adjoint.(Ham.states), 1, Ref(subset)) .* selectdim.(shifted_2, 2, Ref(subset)))
         ##### selectdim(x, 1, v) = x[v, :] and similarly selectdim(x, 2, v) = x[:, v]
-        ##### selectdim.(M, 1, Ref(subset)) ---> [[M[subset, :] for all k points]] 
+        ##### selectdim.(M, 1, Ref(subset)) ---> [[M[subset, :] for all k points]]
         return (Link_1, Link_2)
     end
 
@@ -91,18 +93,18 @@ PartialChernNumber(Ham::Hamiltonian, band::Int64, mu::Float64) --> Float64
 Function to get the Chern number of a partially filled band given a `Hamiltonian`, a `band` index, and a chemical potential `mu`.
 
 """
-    function PartialChernNumber(Ham::Hamiltonian, band::Int64, mu::Float64)::Float64
-        
+    function PartialChernNumber(Ham::Hamiltonian, band::Int64, mu::Float64, T::Float64)::Float64
+
         @assert band in UnitRange(1, length(Ham.bands[begin])) "Band index out of range!"
 
         Links   =   FindLinks(Ham, [band])
         Field   =   FieldStrength(Links)
 
         energies=   getindex.(Ham.bands, Ref(band))
-        filled  =   (energies .< mu)
+        filled  =   DistFunction(energies; mu = mu, T = T, stat = -1)
         chern   =   (1/(2*pi)) * sum((angle.(Field)) .* filled )
 
-        return chern    
+        return chern
     end
 
 
@@ -112,21 +114,64 @@ FilledChernNumber(Ham::Hamiltonian, mu::Float64) --> Float64
 Function to get the Chern number of bands filled upto a given chemical potential `mu`.
 
 """
-    function FilledChernNumber(Ham::Hamiltonian, mu::Float64)::Float64
+    function FilledChernNumber(Ham::Hamiltonian, mu::Float64, T::Float64)::Float64
 
-        filled_bands    =   searchsortedfirst.(Ham.bands, Ref(mu)) .- 1
+        # filled_bands    =   searchsortedfirst.(Ham.bands, Ref(mu)) .- 1
 
-        if findmax(filled_bands)[1] == 0
-            @warn "Chemical potential is below the lowest band. Chern number is not well defined!"
-            return 0.0
+        # if findmax(filled_bands)[1] == 0
+        #     @warn "Chemical potential is below the lowest band. Chern number is not well defined!"
+        #     return 0.0
 
-        else
-            return sum(PartialChernNumber.(Ref(Ham), collect(1:findmax(filled_bands)[1]), Ref(mu)))
-        end
+        # else
+        return sum(PartialChernNumber.(Ref(Ham), collect(1:length(Ham.bands[begin])), Ref(mu), Ref(T)))
+        # end
 
     end
 
+    function OccupiedChernNumber(Ham::Hamiltonian, mu::Float64, T::Float64)
+        chern = 0.0
 
+        for band in 1:length(Ham.bands[begin])
+            link = FindLinks(Ham, [band])
+            field = FieldStrength(link)
+            occupation = DistFunction(getindex.(Ham.bands, band); mu = mu, T = T)
+            chern += (1/(2*pi)) * sum((angle.(field)) .* occupation)
+        end
+
+        return chern
+    end
+
+    function KuboChern(Ham::Hamiltonian, bz::BZ, mu::Float64)
+
+        Vx = conj.(permutedims.(Ham.states)) .* Ham.velocity[1] .* Ham.states
+        Vy = conj.(permutedims.(Ham.states)) .* Ham.velocity[2] .* Ham.states
+
+        chern = 0.0 + im*0.0
+        for k in eachindex(Ham.bands)
+            Es = Ham.bands[k]
+            vx = Vx[k]
+            vy = Vy[k]
+
+            ind = searchsortedfirst(Es, mu)
+            if ind == 1 || ind == length(Es)
+                continue
+            else
+                for i in 1:ind-1
+                    for j in ind:length(Es)
+                        chern += (vx[i, j] * vy[j, i] - vx[j, i] * vy[i, j]) / ((Es[j] - Es[i])^2)
+                    end
+                end
+            end
+
+        end
+
+        b1 = [bz.basis[1];0.0]
+        b2 = [bz.basis[2];0.0]
+        bzUnitArea = cross(b1, b2)[3]/(4*pi^2)
+
+        return imag(chern)*bzUnitArea*2*pi/length(Ham.bands)
+
+    end
 
 
 end
